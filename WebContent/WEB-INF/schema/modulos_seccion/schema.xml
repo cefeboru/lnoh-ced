@@ -1,0 +1,26 @@
+<schema name="lnoh_modulos_seccion">
+
+  <table name="lnoh_modulos_seccion">
+    <comment>Volcado de modulos</comment>
+
+    <column name="pk1" data-type="int" nullable="false" identity="true" />
+    <column name="cod_modulo" data-type="char(7)" nullable="false" identity="false" />
+    <column name="seccion" data-type="int" nullable="false" identity="false" />
+    <column name="cod_sede" data-type="int" nullable="false" identity="false" />
+    <column name="anno" data-type="int" nullable="false" identity="false" />
+    <column name="semestre" data-type="int" nullable="false" identity="false" default="0"/>
+    <column name="modalidad" data-type="char(3)" nullable="false" identity="false" default="0" />
+    <column name="escuela" data-type="char(3)" nullable="true" identity="false" />
+    <column name="id_course_moodle" data-type="int" nullable="false" default="0" identity="false" />
+    <column name="estado" data-type="char(1)" nullable="false" identity="false" />
+    <column name="cod_course_moodle" data-type="varchar(18)" nullable="false" identity="false" />
+    <column name="nombre_course_moodle" data-type="varchar(210)" nullable="false" identity="false" />
+    <column name="fecha_ini" data-type="char(23)" nullable="false" identity="false" />
+    <column name="fecha_fin" data-type="char(23)" nullable="false" identity="false" />
+    
+
+    <primary-key name="lnoh_modulos_seccion_pk1">
+      <columnref name="pk1"/>
+    </primary-key>
+  </table>
+</schema>

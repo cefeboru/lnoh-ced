@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.web.container"/>
+	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.module.container"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6">
+		<attributes>
+			<attribute name="owner.project.facets" value="java"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="C:/Users/cbonilla/CNT-Libs/bb-cms-admin-9.1.201404.160205.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cbonilla/CNT-Libs/bb-platform-9.1.130093.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cbonilla/CNT-Libs/bb-taglibs-9.1.130093.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cbonilla/CNT-Libs/servlet-api.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cbonilla/WebServices JARs/activation.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cbonilla/WebServices JARs/javax.mail.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cbonilla/CNT-Libs/jsp-api-2.1.jar"/>
+	<classpathentry kind="output" path="build/classes"/>
+</classpath>

@@ -1,0 +1,35 @@
+<schema name="lnoh_horario_docente">
+
+  <table name="lnoh_horario_docente">
+    <comment>Contiene el archivo HorarioDocente</comment>
+    <column name="pk1" data-type="int" nullable="false" identity="true" />
+    <column name="ANO_PROCESO" data-type="int" nullable="false" identity="false" />
+    <column name="SEMESTRE_PROCESO" data-type="int" nullable="false" identity="false" />
+    <column name="RUT_DOCENTE" data-type="int" nullable="false" identity="false" />
+    <column name="MODULO" data-type="char(10)" nullable="false" identity="false" />
+    <column name="SECCION" data-type="int" nullable="false" identity="false" default="0"/>
+    <column name="ID_DIA" data-type="char(3)" nullable="false" identity="false" default="0" />
+    <column name="DIA_LETRAS" data-type="char(9)" nullable="true" identity="false" />
+    <column name="ID_MODULO" data-type="int" nullable="false" identity="false" />
+    <column name="HORARIO_MODULO" data-type="char(13)" nullable="true" identity="false" />
+    <column name="DURACION_MODULO" data-type="int" nullable="true" identity="false" />
+    <column name="JORNADA_MODULO" data-type="char(1)" nullable="false" identity="false" />
+    <column name="DSAL_CLASE" data-type="int" nullable="false" identity="false" />
+    <column name="FECHA_OCUPADA" data-type="char(23)" nullable="false" identity="false" />
+    <column name="FECHA_LIBERADA" data-type="char(23)" nullable="false" identity="false" />
+    <column name="SALA" data-type="char(4)" nullable="false" identity="false" />
+    <column name="COD_EDIFICIO" data-type="char(4)" nullable="true" identity="false" />
+    <column name="NOM_EDIFICIO" data-type="char(35)" nullable="false" identity="false" />
+    <column name="SEDE_EDIFICIO" data-type="int" nullable="false" identity="false" />
+    <column name="NOM_SALA" data-type="char(40)" nullable="false" identity="false" />
+    <column name="CARRERA_DEL_MODULO" data-type="int" nullable="false" identity="false" />
+    <column name="MODALIDAD" data-type="char(15)" nullable="false" identity="false" />
+    <column name="COD_ESCUELA" data-type="char(4)" nullable="false" identity="false" />
+    <column name="MOM_ESCUELA" data-type="char(32)" nullable="false" identity="false" />
+    
+
+    <primary-key name="lnoh_horario_doc_pk1">
+      <columnref name="pk1"/>
+    </primary-key>
+  </table>
+</schema>

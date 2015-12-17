@@ -1,0 +1,23 @@
+<schema name="lnoh_modulos_estudiantes">
+
+  <table name="lnoh_modulos_estudiantes">
+    <comment>Relacion Estudiantes Modulos</comment>
+
+    <column name="pk1" data-type="int" nullable="false" identity="true" />
+    <column name="rut_id" data-type="int" nullable="false" identity="false" />
+    <column name="carrera_id" data-type="int" nullable="false" identity="false" />
+    <column name="curso_id" data-type="char(6)" nullable="false" identity="false" />
+    <column name="seccion" data-type="int" nullable="false" identity="false" />
+    <column name="nota_final" data-type="int" nullable="false" identity="false" default="0"/>
+    <column name="prom_asistencia" data-type="int" nullable="false" identity="false" default="0" />
+    <column name="status" data-type="int" nullable="true" identity="false" />
+    <column name="anio" data-type="int" nullable="false" identity="false" />
+    <column name="semestre" data-type="int" nullable="false" identity="false" />
+    <column name="jornada" data-type="char(4)" nullable="false" identity="false" />
+
+    <primary-key name="lnoh_mod_estu_pk1">
+      <columnref name="pk1"/>
+    </primary-key>
+
+  </table>
+</schema>

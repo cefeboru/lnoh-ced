@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest xmlns="http://www.blackboard.com/bb-manifest-plugin.xsd">
+	<plugin>
+		<name value="Carpeta Electronica Docente"/>
+		<handle value="AIEP CED"/>
+		<description value="CED Building Block"/>
+		<version value= "1.0.30"/>
+		<requires>
+    		<bbversion value="9.1.0"/>
+    	</requires>
+    <vendor>
+      <id value="LNOH"/>
+      <name value="LNOH"/>
+      <url value="" />
+      <description value="Laureate " />
+    </vendor>
+    <http-actions>
+    	<config value="settings.jsp" />
+    </http-actions> 
+    <content-handlers>
+    </content-handlers>
+    <application-defs>
+    	<application handle="ced_assistance" name="CED - Registro de Asistencia" is-course-tool="true" is-org-tool="false" can-allow-guest="false" use-ssl="false">
+    		<description>Registra la asistencia para los estudiantes.</description>
+    		<links>
+    			<link>
+    				<type value="course_tool"/>
+		            <name value="Moudlo - CED"/>
+		            <url value="Index.jsp"/>
+		            <description value="Not inteded for click"/>
+    			</link>
+    		</links>
+    	</application>
+    	<application handle="ced_regulizador" name="CED - Regulizador" is-course-tool="true" is-org-tool="false" can-allow-guest="false" use-ssl="false">
+    		<description>Regulizar asistencia.</description>
+    		<links>
+    			<link>
+    				<type value="course_tool"/>
+		            <name value="Regulizar Asistencia"/>
+		            <url value="regulizador.jsp"/>
+		            <description value="Regulizar Asisntecia"/>
+    			</link>
+    		</links>
+    	</application>
+    </application-defs>
+    
+    <module-defs>
+    	<module-type ext-ref="5ca1d74bd07648448ee149f74d38ef8a" title="Mi Asistencia" uicreatable="true">
+    		<jsp-dir>CED_MODULE</jsp-dir>
+    		<jsp>
+    			<view>asistencia.jsp</view>
+    		</jsp>
+    	</module-type>
+    	<module type="portal/bookmarks" isadmin="true" hidetitle="false" useraddable="true" isdeletable="false" isdetachable="false" isavailabletocourse="true" isavailabletoorganization="false" ext-ref="5ca1d74bd07648448ee149f74d38ef8a" title="Marcadores">
+            <description format="H">Mostrar+enlaces+de+hasta+3+marcadores+personales.</description>
+            <ExtraInfo />
+            <module-groups>
+                <module-group id="everyone" />
+            </module-groups>
+        </module>
+    </module-defs>
+    
+    <schema-dirs>
+	  <schema-dir dir-name="WsResponses" />
+	  <schema-dir dir-name="modulos_seccion" />
+	  <schema-dir dir-name="horarioDocente" />
+	</schema-dirs>
+    
+    <permissions>
+      <permission type="socket" name="*" actions="connect,resolve" />
+      <permission type="java.lang.RuntimePermission" name="db.connection.*" />
+	  <permission type="attribute" name="user.authinfo" actions="get,set" />
+	  <permission type="attribute" name="user.personalinfo" actions="get,set" />
+	  <permission type="persist" name="UserRole" actions="*" />
+      <permission type="persist" name="CourseToc" actions="*" />
+      <!--permission type="persist" name="Announcement" actions="*" /-->
+      <permission type="persist" name="Course" actions="*" />
+      <permission type="persist" name="CourseMembership" actions="*" />
+    </permissions>
+    
+	</plugin>
+</manifest>

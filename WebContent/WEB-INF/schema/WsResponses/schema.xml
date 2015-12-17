@@ -1,0 +1,18 @@
+<schema name="lnoh_ced2aiep_response">
+
+  <table name="lnoh_ced_response">
+    <comment>WebService responses</comment>
+
+    <column name="pk1" data-type="int" nullable="false" identity="true" />
+    <column name="rut_estudiante" data-type="char(15)" nullable="false" />
+    <column name="id_curso" data-type="char(20)" nullable="false" />
+    <column name="fecha_asistencia" data-type="char(9)" nullable="false" />
+    <column name="fecha_ws" data-type="int" nullable="false" />
+    <column name="codigo" data-type="int" nullable="false" />
+
+    <primary-key name="lnoh_response_pk1">
+      <columnref name="pk1"/>
+    </primary-key>
+
+  </table>
+</schema>

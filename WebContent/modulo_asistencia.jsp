@@ -6,20 +6,30 @@
 
 <%@taglib uri="/bbData" prefix="bbData" %>
 
+
 <bbData:context id="ctx">
 <head>
 	<style>
-	</style>
+	th, td {
+		text-align:center;
+	}
+	table {
+		width: 100%;
+		border-width:0;
+	}
+</style>
 </head>
 <body>
-	<% if(ctx.getUser().getSystemRole().equals(SystemRole.DEFAULT)){		
-		
-			Index in = new Index(ctx);
-			out.print(in.calcularSemanas());
-			//out.print("FLAGS: " + in.flags);
-	} else  {
-		out.print("<p>Regulizar Asistencia</p>");
-	}
-	%>
+	<table>
+		<tbody>
+			<% if(ctx.getUser().getSystemRole().equals(SystemRole.DEFAULT)){		
+					Index in = new Index(ctx);
+					out.print( in.renderWeeksStudent(ctx.getUser()) );
+			} else  {
+				out.print("<p>Para Regulizar Asistencia dirigase hacia \"Herramientas del Curso > Regulizar Asistencia\"</p>");
+			} %>
+		</tbody>
+	</table>
+			
 </body>
 </bbData:context>

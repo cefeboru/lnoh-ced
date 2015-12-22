@@ -15,7 +15,7 @@
 	<% if(ctx.getUser().getSystemRole().equals(SystemRole.DEFAULT)){		
 		
 			Index in = new Index(ctx);
-			out.print(in.calcularSemanas());
+			out.print("TEST");
 			//out.print("FLAGS: " + in.flags);
 	} else  {
 		out.print("<p>Regulizar Asistencia</p>");

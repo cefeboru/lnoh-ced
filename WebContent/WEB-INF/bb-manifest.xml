@@ -67,15 +67,15 @@
 	</schema-dirs>
     
     <permissions>
-      <permission type="socket" name="*" actions="connect,resolve" />
-      <permission type="java.lang.RuntimePermission" name="db.connection.*" />
-	  <permission type="attribute" name="user.authinfo" actions="get,set" />
-	  <permission type="attribute" name="user.personalinfo" actions="get,set" />
-	  <permission type="persist" name="UserRole" actions="*" />
-      <permission type="persist" name="CourseToc" actions="*" />
-      <!--permission type="persist" name="Announcement" actions="*" /-->
-      <permission type="persist" name="Course" actions="*" />
-      <permission type="persist" name="CourseMembership" actions="*" />
+	      <permission type="socket" name="*" actions="connect,resolve" />
+	      <permission type="java.lang.RuntimePermission" name="db.connection.*" />
+		  <permission type="attribute" name="user.authinfo" actions="get,set" />
+		  <permission type="attribute" name="user.personalinfo" actions="get,set" />
+		  <permission type="persist" name="UserRole" actions="*" />
+	      <permission type="persist" name="CourseToc" actions="*" />
+	      <!--permission type="persist" name="Announcement" actions="*" /-->
+	      <permission type="persist" name="Course" actions="*" />
+	      <permission type="persist" name="CourseMembership" actions="*" />
     </permissions>
     
 	</plugin>

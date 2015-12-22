@@ -2,7 +2,8 @@
 
 <%@ page import="org.tempuri.Index" %>
 <%@ page import="java.util.List" %>
-<%@ page import="blackboard.data.course.CourseMembership;" %>
+<%@ page import="blackboard.data.course.CourseMembership" %>
+<%@ page import = "java.util.Map" %>
 
 
 <%@taglib uri="/bbData" prefix="bbData" %>
@@ -32,15 +33,29 @@
 			<% Index in = new Index(bbContext); %>
 			
 			<form method="post" id="regulizarForm">
-				<input type="hidden" name="jsonData">
+				<input type="hidden" name="jsonData" id="jsonDataInput">
 			</form>
 			<table class="table table-bordered table-hover">
 				<thead><%= in.renderTableHeaders() %></thead>
 				<tbody><%= in.renderTableBody() %></tbody>
 			</table>
+			<button id="btnRegistrar"  onclick="sendData()" type="button" class="btn btn-default"> Registrar Asistencia </button>
 			<script>
-				function dataToJson(){
-					//TODO Convertir las selecciones a una cadena Json y enviarla por POST
+				function sendData(){
+					var form = document.getElementById("regulizarForm");
+					if(form){
+						var input = document.getElementById("jsonDataInput");
+						var checkboxes = $$("input[week]");
+						for(var i=0;i < checkboxes.length; i++){
+							if(checkboxes[i].checked){
+								var rut = checkboxes[i].parentElement.parentElement.getAttribute("rut");
+								var week = checkboxes[i].getAttribute("week");
+								var inputElement = document.getElementById("jsonDataInput");
+								inputElement.value += rut + ":" + week + ","; 
+							}
+						}
+						form.submit();
+					}
 				}
 			</script>
 </bbNG:learningSystemPage>

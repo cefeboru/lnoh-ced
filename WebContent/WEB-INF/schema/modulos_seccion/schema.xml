@@ -20,7 +20,10 @@
     
 
     <primary-key name="lnoh_modulos_seccion_pk1">
-      <columnref name="pk1"/>
+      <columnref name="cod_modulo"/>
+      <columnref name="seccion"/>
+      <columnref name="anno"/>
+      <columnref name="semestre"/>
     </primary-key>
   </table>
 </schema>

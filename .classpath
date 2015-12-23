@@ -16,5 +16,6 @@
 	<classpathentry kind="lib" path="C:/Users/cbonilla/WebServices JARs/javax.mail.jar"/>
 	<classpathentry kind="lib" path="C:/Users/cbonilla/CNT-Libs/jsp-api-2.1.jar"/>
 	<classpathentry kind="lib" path="C:/Users/cbonilla/Desktop/javax.json-api-1.0-javadoc.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cbonilla/CNT-Libs/commons-net-3.3.jar"/>
 	<classpathentry kind="output" path="build/classes"/>
 </classpath>

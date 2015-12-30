@@ -1,56 +1,24 @@
 package org.tempuri;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.SocketException;
-import org.apache.commons.net.ftp.FTP;
-import org.apache.commons.net.ftp.FTPClient;
-import org.apache.commons.net.ftp.FTPReply;
-
 public class test {
 
-	public static void main(String[] args) throws SocketException, IOException {
+	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		FTPClient ftp = new FTPClient();
-		
-		String remoteFile = "mirror/FreeBSD/README.TXT";
-		
-		ftp.connect("localhost",2222);
-		ftp.enterLocalPassiveMode();
-		ftp.setFileType(FTP.BINARY_FILE_TYPE);
-		
-		int reply = ftp.getReplyCode();
-		
-		if(!FTPReply.isPositiveCompletion(reply)) {
-	        ftp.disconnect();
-	        System.err.println("FTP server refused connection, code: "+ reply);
-	        System.exit(1);
-	      }
-		
-		String filename = "sitemap.sql";
-		File downloadFile2 = new File(filename);
-		OutputStream outputStream2 = new BufferedOutputStream(new FileOutputStream(filename));
-		
-		InputStream inputStream = ftp.retrieveFileStream(remoteFile);
-		
-		byte[] bytesArray = new byte[4096];
-        int bytesRead = -1;
-        
-        while ((bytesRead = inputStream.read(bytesArray)) != -1) {
-            outputStream2.write(bytesArray, 0, bytesRead);
-        }
-		
-        boolean success = ftp.completePendingCommand();
-        if (success) {
-            System.out.println("File #2 has been downloaded successfully.");
-        }
-        
-        outputStream2.close();
-        inputStream.close();
+		String temp = "2015;2;5773828;TSS124;3500;4;JUEVES;3;10:15 a 11:00;45;D;3;2015-10-28 00:00:00.000;2015-12-03 00:00:00.000;U201;320;EDIFICIO U;320;U201 AULA DE CLASES;320023;DIURNA;DES;DESARROLLO SOCIAL";
+		String[] test = temp.split(";");
+		System.out.print(arrayToString(test));
+	}
+
+	public static String arrayToString(String[] array) {
+		String temp = "";
+		System.out.println(array.length);
+		StringBuilder BatchInsert = new StringBuilder();
+		for (int i = 0; i < array.length; i++) {
+			BatchInsert.append(array[i]).append(",");
+		}
+		String temp1 = BatchInsert.toString();
+		temp1 = temp1.substring(0, temp1.length()-1);
+		return temp1;
 	}
 
 }

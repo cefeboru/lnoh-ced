@@ -43,7 +43,6 @@ public class Index {
 		DatabaseContainer.getDefaultInstance().getBbDatabase().getConnectionManager().setTraceConnectionOpeners(true);
 
 		this.ctx = bbContext;
-
 		// Instanciar el WeService
 		cedProxy = new WSAsistenciaSoapProxy();
 

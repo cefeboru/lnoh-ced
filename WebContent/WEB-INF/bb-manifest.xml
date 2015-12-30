@@ -20,7 +20,7 @@
     <content-handlers>
     </content-handlers>
     <application-defs>
-    	<application handle="ced_assistance" name="CED - Modulo - Registro de Asistencia" is-course-tool="true" is-org-tool="false" can-allow-guest="false" use-ssl="false">
+    	<application handle="CED" name="Carpeta Electronica Docente" is-course-tool="true" is-org-tool="false" can-allow-guest="false" use-ssl="false">
     		<description>Registra la asistencia para los estudiantes.</description>
     		<links>
     			<link>
@@ -29,16 +29,17 @@
 		            <url value="modulo_asistencia.jsp"/>
 		            <description value="Not inteded for click"/>
     			</link>
-    		</links>
-    	</application>
-    	<application handle="ced_regulizador" name="CED - Regulizador" is-course-tool="true" is-org-tool="false" can-allow-guest="false" use-ssl="false">
-    		<description>Regulizar asistencia.</description>
-    		<links>
     			<link>
     				<type value="course_tool"/>
 		            <name value="Regulizar Asistencia"/>
 		            <url value="regulizador.jsp"/>
 		            <description value="Regulizar Asisntecia"/>
+    			</link>
+    			<link>
+    				<type value="system_tool"/>
+		            <name value="Volcado Data CED"/>
+		            <url value="volcadoData.jsp"/>
+		            <description value="Volcado Data CED"/>
     			</link>
     		</links>
     	</application>
@@ -64,6 +65,7 @@
 	  <schema-dir dir-name="WsResponses" />
 	  <schema-dir dir-name="modulos_seccion" />
 	  <schema-dir dir-name="horarioDocente" />
+	  <schema-dir dir-name="horarioDocenteTemp" />
 	</schema-dirs>
     
     <permissions>

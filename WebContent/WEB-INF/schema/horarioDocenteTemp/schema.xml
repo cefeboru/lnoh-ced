@@ -1,6 +1,6 @@
-<schema name="lnoh_horario_docente">
+<schema name="lnoh_horario_docente_temp">
 
-  <table name="lnoh_horario_docente">
+  <table name="lnoh_horario_docente_temp">
     <comment>Contiene el archivo HorarioDocente</comment>
     <column name="pk1" data-type="int" nullable="false" identity="true" />
     <column name="ANO_PROCESO" data-type="int" nullable="false" identity="false" />
@@ -28,7 +28,7 @@
     <column name="NOM_ESCUELA" data-type="char(32)" nullable="false" identity="false" />
     
 
-    <primary-key name="lnoh_horario_doc_pk1">
+    <primary-key name="lnoh_horario_temp_pk1">
       <columnref name="pk1"/>
     </primary-key>
   </table>

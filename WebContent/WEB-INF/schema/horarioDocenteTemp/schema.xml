@@ -2,14 +2,13 @@
 
   <table name="lnoh_horario_docente_temp">
     <comment>Contiene el archivo HorarioDocente</comment>
-    <column name="pk1" data-type="int" nullable="false" identity="true" />
+    <column name="pk1" data-type="int" nullable="false" identity="false" />
     <column name="ANO_PROCESO" data-type="int" nullable="false" identity="false" />
     <column name="SEMESTRE_PROCESO" data-type="int" nullable="false" identity="false" />
     <column name="RUT_DOCENTE" data-type="int" nullable="false" identity="false" />
     <column name="MODULO" data-type="nvarchar(10)" nullable="false" identity="false" />
     <column name="SECCION" data-type="int" nullable="false" identity="false" default="0"/>
     <column name="ID_DIA" data-type="nvarchar(3)" nullable="false" identity="false" default="0" />
-    <column name="DIA_LETRAS" data-type="nvarchar(9)" nullable="true" identity="false" />
     <column name="ID_MODULO" data-type="int" nullable="false" identity="false" />
     <column name="HORARIO_MODULO" data-type="nvarchar(13)" nullable="true" identity="false" />
     <column name="DURACION_MODULO" data-type="int" nullable="true" identity="false" />
@@ -25,11 +24,5 @@
     <column name="CARRERA_DEL_MODULO" data-type="int" nullable="false" identity="false" />
     <column name="MODALIDAD" data-type="char(15)" nullable="false" identity="false" />
     <column name="COD_ESCUELA" data-type="char(4)" nullable="false" identity="false" />
-    <column name="NOM_ESCUELA" data-type="char(32)" nullable="false" identity="false" />
-    
-
-    <primary-key name="lnoh_horario_temp_pk1">
-      <columnref name="pk1"/>
-    </primary-key>
   </table>
 </schema>

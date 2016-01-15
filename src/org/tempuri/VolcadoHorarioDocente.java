@@ -3,6 +3,8 @@ package org.tempuri;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -13,61 +15,64 @@ import blackboard.db.ConnectionNotAvailableException;
 public class VolcadoHorarioDocente {
 
 	public String VolcadoHorarioDocente(HttpServletRequest request) throws Exception {
-		String debug = "";
 		if (request.getMethod().equalsIgnoreCase("post")) {
-			String data = "";
-			data += "<p>THIS IS A POST REQUEST, Will try to read the data:</p>\n";
+			long startTime = System.currentTimeMillis();
 			BufferedReader reader = request.getReader();
-			String thisLine = null;
-			int lineNumber = 0;
 
 			Connection conn = null;
 			conn = BbDatabase.getDefaultInstance().getConnectionManager().getConnection();
-			String queryString = "DELETE FROM lnoh_horario_docente_temp";
-			conn.createStatement().execute(queryString);
-			boolean isOracle = BbDatabase.getDefaultInstance().isOracle();
-			int rowsReaded = 0;
-			String multipleInsertQuery = "";
-			StringBuilder stringBuilder = new StringBuilder();
 
+			String thisLine = null;
+			int rowsReaded = 0;
+			boolean isOracle = BbDatabase.getDefaultInstance().isOracle();
+			boolean skipLine = true;
+
+			PreparedStatement ps = conn.prepareStatement(
+					"INSERT INTO LNOH_HORARIO_DOCENTE_TEMP VALUES(LNOH_HORARIO_DOCENTE_SEQ.nextval,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 			while ((thisLine = reader.readLine()) != null) {
-				if (lineNumber == 0) {
-					lineNumber++;
+				// SKIP THE HEADERS IN THE FLAT FILE
+				if (skipLine) {
+					skipLine = false;
 					continue;
 				} else {
+					// STARTS AT LINE 1
 					String[] values = thisLine.split(";");
 					if (isOracle) {
-						queryString = "INTO lnoh_horario_docente_temp VALUES(LNOH_HORARIO_DOCENTE_SEQ.nextVal,"
-								+ arrayToString(values) + ")";
-						// debug += queryString + "\n";
-						// data += "Line " + lineNumber + ": " + thisLine +
-						// "\n";
-						// TODO Make ORACLE MULTIPLE INSERT
+						this.setParameters(values, ps);
 						rowsReaded++;
-					} else {
-						// debug += queryString + "\n";
-						// queryString = "INSERT INTO lnoh_horario_docente_temp
-						// VALUES(nextval('lnoh_horario_docente_seq'),"+arrayToString(values)+")";
-						stringBuilder.append("(nextval('lnoh_horario_docente_seq')," + arrayToString(values) + "),");
-						rowsReaded++;
+						if (rowsReaded % 500 == 0) {
+							ps.executeBatch();
+							ps.clearBatch();
+						}
 					}
-					// throw new Exception(debug);
-					if (rowsReaded >= 500) {
-						rowsReaded = 0;
-						String multipleValues = stringBuilder.toString();
-						multipleValues = multipleValues.substring(0, multipleValues.length() - 1);
-						conn.createStatement().execute("INSERT INTO lnoh_horario_docente_temp VALUES" + multipleValues);
-						stringBuilder = new StringBuilder();
-						// lnoh_horario_docente_temp VALUES" + multipleValues);
-						//throw new Exception("INSERT INTO lnoh_horario_docente_temp VALUES" + multipleValues);
-					}
-
-					lineNumber++;
-
 				}
 			}
+			double temp = rowsReaded / 500.0;
+			temp = temp - Math.ceil(temp);
+			
+			if (temp > 0) {
+				if (isOracle) {
+					ps.executeBatch();
+				}
+			}
+			
+			conn.createStatement().executeQuery("DELETE FROM LNOH_HORARIO_DOCENTE");
+			conn.createStatement()
+					.executeQuery("INSERT INTO LNOH_HORARIO_DOCENTE SELECT * FROM lnoh_horario_docente_temp");
+
+			// DELETE ALL THE ROWS IN THE TEMPORAL TABLE
+			conn.createStatement().execute("DELETE FROM lnoh_horario_docente_temp");
+
+			
 			conn.close();
 			conn = null;
+			ps.close();
+			ps = null;
+			
+			long endTime   = System.currentTimeMillis();
+			long totalTime = endTime - startTime;
+			String data = "";
+			data = "<p> " + rowsReaded + " rows have been successfully processed in " + totalTime/1000 + " seconds .</p>";
 			return data;
 		} else
 			return "<p>VOLCADO HORARIO DOCENTE</p>";
@@ -75,29 +80,44 @@ public class VolcadoHorarioDocente {
 
 	public String arrayToString(String[] array) throws Exception {
 		String temp = "";
-		temp += array[0] + ",";// ANO_PROCESO
-		temp += array[1] + ",";// SEMESTRE_PROCESO
-		temp += array[2] + ",";// RUT_DOCENTE
-		temp += "'" + array[3] + "',";// MODULO
-		temp += array[4] + ",";// SECCION
-		temp += "'" + array[5] + "',";// ID_DIA
-		temp += "'" + array[6] + "',";// DIA_LETRAS
-		temp += array[7] + ",";// ID_MODULO
-		temp += "'" + array[8] + "',";// HORARIO_MODULO
-		temp += array[9] + ",";// DURACION_MODULO
-		temp += "'" + array[10] + "',";// JORNADA_MODULO
-		temp += array[11] + ",";// DSAL_CLASE
-		temp += "'" + array[12] + "',";// FECHA_OCUPADA
-		temp += "'" + array[13] + "',";// FECHA_LIBERADA
-		temp += "'" + array[14] + "',";// SALA
-		temp += "'" + array[15] + "',";// COD_EDIFICIO
-		temp += "'" + array[16] + "',";// NOM_EDIFICIO
-		temp += array[17] + ",";// SEDE_EDIFICIO
-		temp += "'" + array[18] + "',";// NOM_SALA
-		temp += array[19] + ",";// CARRERA_DEL_MODULO
-		temp += "'" + array[20] + "',";// MODALIDAD
-		temp += "'" + array[21] + "',";// COD_ESCUELA
-		temp += "'" + array[21] + "'";// NOM_ESCUELA
+		return temp;
+	}
+
+	public void setParameters(String[] array, PreparedStatement ps) throws Exception {
+		int i = 1;
+		ps.setInt(i++, Integer.valueOf(array[0]));// ANO_PROCESO
+		ps.setInt(i++, Integer.valueOf(array[1]));// SEMESTRE_PROCESO
+		ps.setInt(i++, Integer.valueOf(array[2]));// RUT_DOCENTE
+		ps.setString(i++, array[3]);// MODULO
+		ps.setInt(i++, Integer.valueOf(array[4]));// SECCION
+		ps.setString(i++, array[5]);// ID_DIA
+		ps.setInt(i++, Integer.valueOf(array[7]));// ID_MODULO
+		ps.setString(i++, array[8]);// HORARIO_MODULO
+		ps.setInt(i++, Integer.valueOf(array[9]));// DURACION_MODULO
+		ps.setString(i++, array[10]);// JORNADA_MODULO
+		ps.setInt(i++, Integer.valueOf(array[11]));// DSAL_CLASE
+		ps.setString(i++, array[12]);// FECHA_OCUPADA
+		ps.setString(i++, array[13]);// FECHA_LIBERADA
+		ps.setString(i++, removeUnhandledCharacters(array[14]));// SALA
+		ps.setString(i++, array[15]);// COD_EDIFICIO
+		ps.setString(i++, removeUnhandledCharacters(array[16]));// NOM_EDIFICIO
+		ps.setString(i++, removeUnhandledCharacters(array[17]));// SEDE_EDIFICIO
+		ps.setString(i++, removeUnhandledCharacters(array[18]));// NOM_SALA
+		ps.setInt(i++, Integer.valueOf(array[19]));// CARRERA_DEL_MODULO
+		ps.setString(i++, array[20]);// MODALIDAD
+		ps.setString(i++, array[21]);// COD_ESCUELA
+		ps.addBatch();
+	}
+	
+	public String removeUnhandledCharacters(String str){
+		char[] strArray = str.toCharArray();
+		String temp = "";
+		for(int i= 0; i < strArray.length; i++){
+			if(Character.isLetter(strArray[i]) || ' ' == strArray[i] || Character.isDigit(strArray[i])){
+				temp += strArray[i];
+			}
+		}
+		
 		return temp;
 	}
 }

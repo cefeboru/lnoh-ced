@@ -1,24 +1,46 @@
 package org.tempuri;
 
+import java.text.ParseException;
+import java.util.List;
+
+import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import blackboard.data.course.CourseMembership;
+import blackboard.data.user.User;
+import blackboard.persist.KeyNotFoundException;
+import blackboard.persist.PersistenceException;
+import blackboard.persist.course.CourseMembershipDbLoader;
+import blackboard.persist.user.UserDbLoader;
+import blackboard.platform.context.Context;
+
 public class test {
 
-	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-		String temp = "2015;2;5773828;TSS124;3500;4;JUEVES;3;10:15 a 11:00;45;D;3;2015-10-28 00:00:00.000;2015-12-03 00:00:00.000;U201;320;EDIFICIO U;320;U201 AULA DE CLASES;320023;DIURNA;DES;DESARROLLO SOCIAL";
-		String[] test = temp.split(";");
-		System.out.print(arrayToString(test));
+	private Context ctx;
+	private final org.slf4j.Logger slf4jLogger = LoggerFactory.getLogger(test.class);
+	
+	
+	public static void main(String[] args) throws ParseException {
+		
 	}
 
-	public static String arrayToString(String[] array) {
-		String temp = "";
-		System.out.println(array.length);
-		StringBuilder BatchInsert = new StringBuilder();
-		for (int i = 0; i < array.length; i++) {
-			BatchInsert.append(array[i]).append(",");
+	public test(Context ctx) throws KeyNotFoundException, PersistenceException {
+		this.ctx = ctx;
+		System.out.println("HOLA !#!#!");
+	}
+	
+
+	public String getRole() throws KeyNotFoundException, PersistenceException {
+		List<User> users = UserDbLoader.Default.getInstance().loadByCourseId(ctx.getCourseId());
+		String roles = "";
+		for (int i = 0; i < users.size(); i++) {
+			User currentUser = users.get(i);
+			CourseMembership cm = CourseMembershipDbLoader.Default.getInstance()
+					.loadByCourseAndUserId(this.ctx.getCourseId(), currentUser.getId());
+			if(cm.getRole().getDbRole().getIdentifier().equalsIgnoreCase("Estudiante")){
+				roles += "<p> UserName: " + currentUser.getUserName() + "</p>";
+			}
 		}
-		String temp1 = BatchInsert.toString();
-		temp1 = temp1.substring(0, temp1.length()-1);
-		return temp1;
+		return roles;
 	}
-
 }

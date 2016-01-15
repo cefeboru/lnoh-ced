@@ -25,15 +25,15 @@
     		<links>
     			<link>
     				<type value="course_tool"/>
-		            <name value="Moudlo - CED"/>
+		            <name value="Modulo - CED"/>
 		            <url value="modulo_asistencia.jsp"/>
-		            <description value="Not inteded for click"/>
+		            <description value="Vista de asistencia para los estudiantes"/>
     			</link>
     			<link>
     				<type value="course_tool"/>
 		            <name value="Regulizar Asistencia"/>
 		            <url value="regulizador.jsp"/>
-		            <description value="Regulizar Asisntecia"/>
+		            <description value="Regulizar Asistencia"/>
     			</link>
     			<link>
     				<type value="system_tool"/>
@@ -63,7 +63,7 @@
     
     <schema-dirs>
 	  <schema-dir dir-name="WsResponses" />
-	  <schema-dir dir-name="modulos_seccion" />
+	  <!-- <schema-dir dir-name="modulos_seccion" />  -->
 	  <schema-dir dir-name="horarioDocente" />
 	  <schema-dir dir-name="horarioDocenteTemp" />
 	</schema-dirs>

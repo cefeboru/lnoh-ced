@@ -3,6 +3,8 @@
 
 <%@ page import="org.tempuri.Index" %>
 <%@ page import="blackboard.data.user.User.SystemRole" %>
+<%@ page import="blackboard.data.course.CourseMembership"%>
+<%@ page import="blackboard.persist.course.CourseMembershipDbLoader"%>
 
 <%@taglib uri="/bbData" prefix="bbData" %>
 
@@ -22,7 +24,9 @@
 <body>
 	<table>
 		<tbody>
-			<% if(ctx.getUser().getSystemRole().equals(SystemRole.DEFAULT)){		
+			<%
+			CourseMembership cm = CourseMembershipDbLoader.Default.getInstance().loadByCourseAndUserId(ctx.getCourseId(), ctx.getUserId());
+			if(cm.getRole().getDbRole().getIdentifier().equalsIgnoreCase("Estudiante")){		
 					Index in = new Index(ctx);
 					out.print( in.renderWeeksStudent(ctx.getUser()) );
 			} else  {

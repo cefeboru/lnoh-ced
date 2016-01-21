@@ -20,7 +20,6 @@ import blackboard.db.ConnectionNotAvailableException;
 import blackboard.persist.DatabaseContainer;
 import blackboard.persist.course.CourseMembershipDbLoader;
 import blackboard.persist.user.UserDbLoader;
-import blackboard.platform.config.ConfigurationServiceFactory;
 import blackboard.platform.context.Context;
 
 import java.util.ArrayList;
@@ -123,31 +122,32 @@ public class Index {
 		return codigo;
 	}
 
-	public int registrarAsistencia(Date date, String rut) throws Exception {
+	public int registrarAsistencia(Date asistance_date, String rut) throws Exception {
 
 		// Format Date
 		SimpleDateFormat sdf = new SimpleDateFormat("ddMMyyyy");
-		String fechaAsistencia = sdf.format(date);
+		String fechaAsistencia = sdf.format(asistance_date);
 		// Call the WebService method registrarAsistencia
 		int endIndex = this.getCourseId().lastIndexOf("-");
 		Response response = cedProxy.registrarAsistencia(getCourseId().substring(0, endIndex), rut, fechaAsistencia,
 				this.getToken());
 		int codigo = response.getCodigo();
 		String responseMessage = response.getMensaje();
-		System.out.println("WS response: " + response.getMensaje() + " WS code: " + response.getCodigo() + "Date: "
+		System.out.println("WS response: " + response.getMensaje() + " WS code: " + response.getCodigo() + " Date: "
 				+ fechaAsistencia);
 		// Get the BlackBoard DATABASE CONNECTION
 		ConnectionManager cManager = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = cManager.getConnection();
 
 		String queryString = "";
+		Date currentTime = new Date(System.currentTimeMillis());
 		if (BbDatabase.getDefaultInstance().isOracle()) {
 			queryString = "insert into lnoh_ced_response VALUES (LNOH_CED_RESPONSE_SEQ.nextVal, '" + rut + "','"
-					+ this.getCourseId() + "'," + fechaAsistencia + "," + (date.getTime() / 1000L) + ","
+					+ this.getCourseId() + "'," + fechaAsistencia + "," + (currentTime.getTime() / 1000L) + ","
 					+ response.getCodigo() + ")";
 		} else {
 			queryString = "insert into lnoh_ced_response VALUES (nextval('lnoh_ced_response_seq'), '" + rut + "','"
-					+ this.getCourseId() + "'," + fechaAsistencia + "," + (date.getTime() / 1000L) + ","
+					+ this.getCourseId() + "'," + fechaAsistencia + "," + (asistance_date.getTime() / 1000L) + ","
 					+ response.getCodigo() + ")";
 		}
 
@@ -157,7 +157,7 @@ public class Index {
 		// WEB SERVICE ERROR HANDLING
 		if (errorCodes.contains(codigo)) {
 			Calendar c = Calendar.getInstance();
-			c.setTime(date);
+			c.setTime(new Date());
 			c.set(Calendar.HOUR_OF_DAY, 0);
 			c.set(Calendar.MINUTE, 0);
 			c.set(Calendar.SECOND, 0);
@@ -167,17 +167,25 @@ public class Index {
 			c.set(Calendar.MINUTE, 59);
 			c.set(Calendar.SECOND, 59);
 			Date endOfDay = c.getTime();
-
-			String Query = "SELECT COUNT(*) FROM LNOH_CED_RESPONSE WHERE rut_estudiante='" + rut + "' AND codigo="
-					+ codigo + " AND (fecha_ws BETWEEN " + startOfDay.getTime() / 1000L + " AND "
-					+ endOfDay.getTime() / 1000L + ")";
+			
+			String Query = "";
+			if(codigo == 4){
+				Query = "SELECT COUNT(*) FROM LNOH_CED_RESPONSE WHERE codigo="
+						+ codigo + "AND ID_CURSO='"+this.getCourseId()+"' AND (fecha_ws BETWEEN " + startOfDay.getTime() / 1000L + " AND "
+						+ endOfDay.getTime() / 1000L + ")";
+			} else {
+				Query = "SELECT COUNT(*) FROM LNOH_CED_RESPONSE WHERE rut_estudiante='" + rut + "' AND codigo="
+						+ codigo + "AND ID_CURSO='"+this.getCourseId()+"' AND (fecha_ws BETWEEN " + startOfDay.getTime() / 1000L + " AND "
+						+ endOfDay.getTime() / 1000L + ")";
+			}
+			
 			ResultSet rs = conn.createStatement().executeQuery(Query);
 			if (rs.next()) {
 				int count = rs.getInt(1);
 				System.out.println("Will try to Mail Exception - cId: " + this.getCourseId() + " - "
 						+ " errors this day: " + count);
 				if (count <= 1) {
-					sendExceptionEmail(rut, date, responseMessage, codigo, fechaAsistencia);
+					sendExceptionEmail(asistance_date, responseMessage, codigo, currentTime);
 				}
 			}
 		}
@@ -191,48 +199,29 @@ public class Index {
 		return codigo;
 	}
 
-	private void sendExceptionEmail(String studentRut, Date exceptionDate, String responseMessage, int responseCode,
-			String fechaAsistencia) throws ParseException {
-		// TODO SEND EXCEPTIOM MESSAGES
+	private void sendExceptionEmail(Date fechaAsistencia1, String responseMessage, int responseCode,
+			Date currentTime) throws ParseException {
 		String emailBody = "<html xmlns=\"http://www.w3.org/1999/xhtml\"> <head> <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/> <title>Documento sin título</title> <style>body{background: #FFFFFF; color: #333333; font-family: Tahoma, Geneva, sans-serif; font-size: 14px; width: 800px; margin: 50px 40px 40px 60px;}p{text-align: justify;}.pie{text-align: center; font-size: 11px; color: #969696;}.tabla{border: thin solid #666666; border-collapse: collapse;}.tabla th{background-color: #A2A983;}</style> </head> <body> <p> El sistema de registro de Asistencia en la <b>Carpeta Electr&oacute;nica Docente</b> para cursos en la modalidad <b>Semipresencial</b> ha detectado un error : </p><table width=\"800\" border=\"1\" align=\"center\" class=\"tabla\" cellpadding=\"0\" cellspacing=\"0\"> <tr align=\"center\"> <th>COD.</th> <th>MENSAJE</th> <th>CATEGOR&Iacute;A</th> <th>FECHA ASIST.</th> <th>FECHA WS</th> </tr><tr align=\"center\"> <td>%dato1</td><td>%dato2</td><td>%dato3</td><td>%dato6</td><td>%dato7</td></tr></table> <p class=\"pie\"> Direcci&oacute;n de Tecnolog&iacute;as Educativas AIEP. </p></body> </html>";
 		String Categoria = "";
 		if (responseCode == 4)
 			Categoria = "Usuario";
 		else
 			Categoria = "Curso";
-		emailBody.replace("%dato1", String.valueOf(responseCode));
-		emailBody.replace("%dato2", responseMessage);
-		emailBody.replace("%dato3", Categoria);
+		emailBody = emailBody.replace("%dato1", String.valueOf(responseCode));
+		emailBody = emailBody.replace("%dato2", responseMessage);
+		emailBody = emailBody.replace("%dato3", Categoria);
 		SimpleDateFormat sdf = new SimpleDateFormat("ddMMyyyy");
-		String fecha_asistencia = new SimpleDateFormat("dd/MM/yyyy").format(sdf.parse(fechaAsistencia));
-		emailBody.replace("%dato6", fecha_asistencia);
-		emailBody.replace("%dato7", new SimpleDateFormat("dd/MM/yyyy").format(exceptionDate));
-		// sdf.format(exceptionDate)
+		String fecha_asistencia = new SimpleDateFormat("dd/MM/yyyy").format(fechaAsistencia1);
+		emailBody = emailBody.replace("%dato6", fecha_asistencia);
+		emailBody = emailBody.replace("%dato7", new SimpleDateFormat("dd/MM/yyyy").format(currentTime));
 
-		Properties props = new Properties();
-		Session session = Session.getDefaultInstance(props, null);
-		
-		
-		try {
-			System.out.println("Sending Email.....");
-			Message msg = new MimeMessage(session);
-			msg.setFrom(new InternetAddress("no-reply@blackboard.com", "AIEP Admin"));
-			msg.addRecipient(Message.RecipientType.TO,
-                     new InternetAddress("cesar.bonilla@laureate.net", "Cesar Bonilla"));
-			 msg.setSubject("ERROR EN CARPETA ELECTRONICA DOCENTE");
-			 msg.setText(emailBody);
-			 Transport.send(msg);			
-		} catch (UnsupportedEncodingException e1) {
-			e1.printStackTrace();
-		} catch (MessagingException e1) {
-			e1.printStackTrace();
-		}
-		
-		/*BbMail mail = BbMailManagerFactory.getInstance().createMessage();
-		mail.setFrom(ConfigurationServiceFactory.getInstance().toString());
+		BbMail mail = BbMailManagerFactory.getInstance().createMessage();
+		mail.setFrom("no-reply@blackboard.com");
 		mail.setSubject("ERROR EN CARPETA ELECTRONICA DOCENTE");
 		mail.setBody(emailBody);
 		mail.addTo("cesar.bonilla@laureate.net");
+		mail.addTo("Francisco.Vergara@aiep.cl");
+		mail.addTo("Jose.Carcamo@aiep.cl");
 		mail.doNotBccSender();
 
 		try {
@@ -241,14 +230,12 @@ public class Index {
 			System.out.println("UnsupportedEncodingException : " + e.getMessage());
 			e.printStackTrace();
 		} catch (MessagingException e) {
-			// TODO Auto-generated catch block
 			System.out.println("MessagingException : " + e.getMessage());
 			e.printStackTrace();
-		} catch (ValidationException e) {
-			// TODO Auto-generated catch block
+		} catch (ValidationException e) { // TODO Auto-generated catch block
 			System.out.println("ValidationException : " + e.getMessage());
 			e.printStackTrace();
-		}*/
+		}
 
 	}
 
@@ -262,9 +249,12 @@ public class Index {
 
 			for (int j = 0; j < diasProgramados.length; j++) {
 				cal.add(Calendar.DAY_OF_WEEK, diasProgramados[j] - 1);
+				System.out.println("Regulizando Asistencia para " + cal.getTime() + " con rut: " + rut);
 				int codigo = this.registrarAsistencia(cal.getTime(), rut);
 				cal.setTime(new SimpleDateFormat("dd/MM/yyyy").parse(this.Semanas[semana - 1][0]));
-
+				if (codigo == 0 || codigo == 10) {
+					continue;
+				}
 				// WebService Exception Handling
 				if (codigo == 4) {
 					throw new Exception("ERROR 4 - Alumno no econtrado");
@@ -302,7 +292,7 @@ public class Index {
 			fecha_inicio = resultSet.getString("START_DATE");
 			fecha_fin = resultSet.getString("END_DATE");
 		} else {
-			throw new Exception("No se encontro el modulo - @Calcular Semanas");
+			throw new Exception("No se encontro el modulo");
 		}
 
 		Date date_i = new SimpleDateFormat("yyyy-M-d").parse(fecha_inicio);
@@ -531,5 +521,4 @@ public class Index {
 	public void setSemestre(String semestre) {
 		this.semestre = semestre;
 	}
-
 }

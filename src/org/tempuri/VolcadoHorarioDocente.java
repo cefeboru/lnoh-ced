@@ -49,13 +49,13 @@ public class VolcadoHorarioDocente {
 			}
 			double temp = rowsReaded / 500.0;
 			temp = temp - Math.ceil(temp);
-			
+
 			if (temp > 0) {
 				if (isOracle) {
 					ps.executeBatch();
 				}
 			}
-			
+
 			conn.createStatement().executeQuery("DELETE FROM LNOH_HORARIO_DOCENTE");
 			conn.createStatement()
 					.executeQuery("INSERT INTO LNOH_HORARIO_DOCENTE SELECT * FROM lnoh_horario_docente_temp");
@@ -63,16 +63,16 @@ public class VolcadoHorarioDocente {
 			// DELETE ALL THE ROWS IN THE TEMPORAL TABLE
 			conn.createStatement().execute("DELETE FROM lnoh_horario_docente_temp");
 
-			
 			conn.close();
 			conn = null;
 			ps.close();
 			ps = null;
-			
-			long endTime   = System.currentTimeMillis();
+
+			long endTime = System.currentTimeMillis();
 			long totalTime = endTime - startTime;
 			String data = "";
-			data = "<p> " + rowsReaded + " rows have been successfully processed in " + totalTime/1000 + " seconds .</p>";
+			data = "<p> " + rowsReaded + " rows have been successfully processed in " + totalTime / 1000
+					+ " seconds .</p>";
 			return data;
 		} else
 			return "<p>VOLCADO HORARIO DOCENTE</p>";
@@ -108,16 +108,15 @@ public class VolcadoHorarioDocente {
 		ps.setString(i++, array[21]);// COD_ESCUELA
 		ps.addBatch();
 	}
-	
-	public String removeUnhandledCharacters(String str){
+
+	public String removeUnhandledCharacters(String str) {
 		char[] strArray = str.toCharArray();
 		String temp = "";
-		for(int i= 0; i < strArray.length; i++){
-			if(Character.isLetter(strArray[i]) || ' ' == strArray[i] || Character.isDigit(strArray[i])){
+		for (int i = 0; i < strArray.length; i++) {
+			if (Character.isLetter(strArray[i]) || ' ' == strArray[i] || Character.isDigit(strArray[i])) {
 				temp += strArray[i];
 			}
 		}
-		
 		return temp;
 	}
 }

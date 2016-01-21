@@ -63,7 +63,6 @@
     
     <schema-dirs>
 	  <schema-dir dir-name="WsResponses" />
-	  <!-- <schema-dir dir-name="modulos_seccion" />  -->
 	  <schema-dir dir-name="horarioDocente" />
 	  <schema-dir dir-name="horarioDocenteTemp" />
 	</schema-dirs>

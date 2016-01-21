@@ -4,6 +4,7 @@
 <%@ page import="org.tempuri.Index"%>
 <%@ page import="java.util.List"%>
 <%@ page import="blackboard.data.course.CourseMembership"%>
+<%@ page import="blackboard.data.user.User.SystemRole" %>
 <%@ page import="java.util.Map"%>
 
 
@@ -21,7 +22,6 @@ thead tr th p, thead tr th {
 	text-align: center;
 	vertical-align: middle;
 }
-
 #containerdiv {
 	width: 100%;
 }
@@ -35,7 +35,10 @@ thead tr th p, thead tr th {
 
 		</bbNG:pageHeader>
 	</bbNG:breadcrumbBar>
-	<%
+	<% 
+		if(!bbContext.getUser().getSystemRole().equals(SystemRole.SYSTEM_ADMIN)){
+			throw new Exception("Regulizar asistencia solo es permitido por: \"Administradores\".");	
+		}
 		Index in = new Index(bbContext);
 	%>
 
@@ -72,3 +75,8 @@ thead tr th p, thead tr th {
 		}
 	</script>
 </bbNG:learningSystemPage>
+
+    Status API Training Shop Blog About Pricing 
+
+    © 2016 GitHub, Inc. Terms Privacy Security Contact Help 
+

@@ -8,21 +8,17 @@
 			<attribute name="owner.project.facets" value="java"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="C:/Users/cbonilla/CNT-Libs/bb-cms-admin-9.1.201404.160205.jar"/>
-	<classpathentry kind="lib" path="C:/Users/cbonilla/CNT-Libs/bb-platform-9.1.130093.0.jar"/>
-	<classpathentry kind="lib" path="C:/Users/cbonilla/CNT-Libs/bb-taglibs-9.1.130093.0.jar"/>
-	<classpathentry kind="lib" path="C:/Users/cbonilla/CNT-Libs/servlet-api.jar"/>
-	<classpathentry kind="lib" path="C:/Users/cbonilla/WebServices JARs/activation.jar"/>
-	<classpathentry kind="lib" path="C:/Users/cbonilla/WebServices JARs/javax.mail.jar"/>
-	<classpathentry kind="lib" path="C:/Users/cbonilla/CNT-Libs/jsp-api-2.1.jar"/>
-	<classpathentry kind="lib" path="C:/Users/cbonilla/CNT-Libs/commons-net-3.3.jar"/>
-	<classpathentry kind="lib" path="C:/Users/cbonilla/CNT-Libs/commons-logging-1.2.jar"/>
-	<classpathentry kind="lib" path="C:/Users/cbonilla/CNT-Libs/commons-logging-1.2-javadoc.jar"/>
-	<classpathentry kind="lib" path="C:/Users/cbonilla/CNT-Libs/slf4j-api-1.7.7.jar"/>
-	<classpathentry kind="lib" path="C:/Users/cbonilla/CNT-Libs/slf4j-simple-1.7.7.jar"/>
-	<classpathentry kind="lib" path="C:/Users/cbonilla/CNT-Libs/log4j.jar"/>
-	<classpathentry kind="lib" path="C:/Users/cbonilla/CNT-Libs/jstl.jar"/>
-	<classpathentry kind="lib" path="C:/Users/cbonilla/CNT-Libs/jstl-1.2.jar"/>
-	<classpathentry kind="lib" path="C:/Users/cbonilla/CNT-Libs/jstl-standard.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cbonilla/Documents/CNT-Libs/bb-cms-admin-9.1.201404.160205.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cbonilla/Documents/CNT-Libs/bb-platform-9.1.130093.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cbonilla/Documents/CNT-Libs/bb-taglibs-9.1.130093.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cbonilla/Documents/CNT-Libs/servlet-api.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cbonilla/Documents/CNT-Libs/java-mail-1.4.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cbonilla/Documents/CNT-Libs/jsp-api-2.1.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cbonilla/Documents/CNT-Libs/slf4j-api-1.7.7.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cbonilla/Documents/CNT-Libs/slf4j-simple-1.7.7.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cbonilla/Documents/CNT-Libs/log4j.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cbonilla/Documents/CNT-Libs/jstl.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cbonilla/Documents/CNT-Libs/jstl-1.2.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cbonilla/Documents/CNT-Libs/jstl-standard.jar"/>
 	<classpathentry kind="output" path="build/classes"/>
 </classpath>

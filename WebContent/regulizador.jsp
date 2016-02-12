@@ -29,15 +29,15 @@ thead tr th p, thead tr th {
 
 <bbNG:learningSystemPage ctxId="bbContext">
 	<bbNG:breadcrumbBar environment="COURSE">
-		<bbNG:breadcrumb>Regulizador de Asistencia</bbNG:breadcrumb>
+		<bbNG:breadcrumb>Regularizador de Asistencia</bbNG:breadcrumb>
 		<bbNG:pageHeader>
-			<bbNG:pageTitleBar title="Regulizar Asistencia">Regulizar Asistencia</bbNG:pageTitleBar>
+			<bbNG:pageTitleBar title="Regularizar Asistencia">Regularizar Asistencia</bbNG:pageTitleBar>
 
 		</bbNG:pageHeader>
 	</bbNG:breadcrumbBar>
 	<% 
 		if(!bbContext.getUser().getSystemRole().equals(SystemRole.SYSTEM_ADMIN)){
-			throw new Exception("Regulizar asistencia solo es permitido por: \"Administradores\".");	
+			throw new Exception("Regularizar asistencia solo es permitido por: \"Administradores\".");	
 		}
 		Index in = new Index(bbContext);
 	%>
@@ -75,8 +75,3 @@ thead tr th p, thead tr th {
 		}
 	</script>
 </bbNG:learningSystemPage>
-
-    Status API Training Shop Blog About Pricing 
-
-    © 2016 GitHub, Inc. Terms Privacy Security Contact Help 
-

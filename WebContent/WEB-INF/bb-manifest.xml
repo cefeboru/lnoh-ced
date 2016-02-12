@@ -31,9 +31,9 @@
     			</link>
     			<link>
     				<type value="course_tool"/>
-		            <name value="Regulizar Asistencia"/>
+		            <name value="Regularizar Asistencia"/>
 		            <url value="regulizador.jsp"/>
-		            <description value="Regulizar Asistencia"/>
+		            <description value="Regularizar Asistencia"/>
     			</link>
     			<link>
     				<type value="system_tool"/>
@@ -52,12 +52,15 @@
     			<view>modulo_asistencia.jsp</view>
     		</jsp>
     	</module-type>
-    	<module type="portal/bookmarks" isadmin="true" hidetitle="false" useraddable="true" isdeletable="false" isdetachable="false" isavailabletocourse="true" isavailabletoorganization="false" ext-ref="ced_module" title="Marcadores">
-            <description format="H">Mostrar+enlaces+de+hasta+3+marcadores+personales.</description>
+    	<module type="portal/bookmarks" isadmin="true" hidetitle="false" useraddable="true" isdeletable="false" isdetachable="false" isavailabletocourse="true" isavailabletoorganization="false" ext-ref="ced_module" title="Mi Asistencia CED">
+            <description format="H">Asistencia+por+semana+para+los+estudiantes.</description>
             <ExtraInfo />
             <module-groups>
                 <module-group id="everyone" />
             </module-groups>
+            <jsp>
+            	<view>modulo_asistencia.jsp</view>
+            </jsp>
         </module>
     </module-defs>
     
@@ -74,7 +77,6 @@
 		  <permission type="attribute" name="user.personalinfo" actions="get,set" />
 		  <permission type="persist" name="UserRole" actions="*" />
 	      <permission type="persist" name="CourseToc" actions="*" />
-	      <!--permission type="persist" name="Announcement" actions="*" /-->
 	      <permission type="persist" name="Course" actions="*" />
 	      <permission type="persist" name="CourseMembership" actions="*" />
     </permissions>

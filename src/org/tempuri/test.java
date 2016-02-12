@@ -21,7 +21,8 @@ public class test {
 	
 	
 	public static void main(String[] args) throws ParseException {
-		
+		int i= 1;
+		System.out.print(i++);
 	}
 
 	public test(Context ctx) throws KeyNotFoundException, PersistenceException {

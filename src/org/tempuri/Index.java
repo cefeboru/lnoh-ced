@@ -50,8 +50,9 @@ public class Index {
 	private String anio;
 	private String semestre;
 	private Context ctx;
-	private String[][] Semanas;
-	private int[] diasProgramados;
+	private ArrayList<String[]> semanasList = new ArrayList<String[]>();
+	// private int[] diasProgramados;
+	private ArrayList<int[]> diasProgramadosSemana = new ArrayList<int[]>();
 	private ArrayList<Integer> errorCodes = new ArrayList<Integer>(Arrays.asList(4, 5, 7, 8, 9, 11, 12, 16));
 
 	public String flags = "";
@@ -102,12 +103,12 @@ public class Index {
 		String queryString = "";
 		if (BbDatabase.getDefaultInstance().isOracle()) {
 			queryString = "insert into lnoh_ced_response VALUES " + "(LNOH_CED_RESPONSE_SEQ.nextVal, '"
-					+ user.getStudentId() + "','" + this.getCourseId() + "'," + fechaAsistencia + ","
-					+ (date.getTime() / 1000L) + "," + response.getCodigo() + ")";
+					+ user.getStudentId() + "','" + this.getCourseId() + "'," + date.getTime() / 1000L + ","
+					+ (System.currentTimeMillis() / 1000L) + "," + response.getCodigo() + ")";
 		} else {
 			queryString = "insert into lnoh_ced_response VALUES " + "(nextval('lnoh_ced_response_seq'), '"
 					+ user.getStudentId() + "','" + this.getCourseId() + "'," + fechaAsistencia + ","
-					+ (date.getTime() / 1000L) + "," + response.getCodigo() + ")";
+					+ (System.currentTimeMillis() / 1000L) + "," + response.getCodigo() + ")";
 		}
 
 		PreparedStatement query = conn.prepareStatement(queryString, Statement.NO_GENERATED_KEYS);
@@ -143,12 +144,12 @@ public class Index {
 		Date currentTime = new Date(System.currentTimeMillis());
 		if (BbDatabase.getDefaultInstance().isOracle()) {
 			queryString = "insert into lnoh_ced_response VALUES (LNOH_CED_RESPONSE_SEQ.nextVal, '" + rut + "','"
-					+ this.getCourseId() + "'," + fechaAsistencia + "," + (currentTime.getTime() / 1000L) + ","
-					+ response.getCodigo() + ")";
+					+ this.getCourseId() + "'," + (asistance_date.getTime() / 1000L) + ","
+					+ (currentTime.getTime() / 1000L) + "," + response.getCodigo() + ")";
 		} else {
 			queryString = "insert into lnoh_ced_response VALUES (nextval('lnoh_ced_response_seq'), '" + rut + "','"
-					+ this.getCourseId() + "'," + fechaAsistencia + "," + (asistance_date.getTime() / 1000L) + ","
-					+ response.getCodigo() + ")";
+					+ this.getCourseId() + "'," + (asistance_date.getTime() / 1000L) + ","
+					+ (currentTime.getTime() / 1000L) + "," + response.getCodigo() + ")";
 		}
 
 		PreparedStatement query = conn.prepareStatement(queryString, Statement.NO_GENERATED_KEYS);
@@ -167,24 +168,29 @@ public class Index {
 			c.set(Calendar.MINUTE, 59);
 			c.set(Calendar.SECOND, 59);
 			Date endOfDay = c.getTime();
-			
+
 			String Query = "";
-			if(codigo == 4){
-				Query = "SELECT COUNT(*) FROM LNOH_CED_RESPONSE WHERE codigo="
-						+ codigo + "AND ID_CURSO='"+this.getCourseId()+"' AND (fecha_ws BETWEEN " + startOfDay.getTime() / 1000L + " AND "
+			// Manejar errores de CED
+			if (codigo == 4) {
+				// Error de tipo Usuario
+				Query = "SELECT COUNT(*) FROM LNOH_CED_RESPONSE WHERE codigo=" + codigo + "AND ID_CURSO='"
+						+ this.getCourseId() + "' AND (fecha_ws BETWEEN " + startOfDay.getTime() / 1000L + " AND "
 						+ endOfDay.getTime() / 1000L + ")";
 			} else {
-				Query = "SELECT COUNT(*) FROM LNOH_CED_RESPONSE WHERE rut_estudiante='" + rut + "' AND codigo="
-						+ codigo + "AND ID_CURSO='"+this.getCourseId()+"' AND (fecha_ws BETWEEN " + startOfDay.getTime() / 1000L + " AND "
-						+ endOfDay.getTime() / 1000L + ")";
+				// Error de tipo Curso
+				Query = "SELECT COUNT(*) FROM LNOH_CED_RESPONSE WHERE rut_estudiante='" + rut + "' AND codigo=" + codigo
+						+ "AND ID_CURSO='" + this.getCourseId() + "' AND (fecha_ws BETWEEN "
+						+ startOfDay.getTime() / 1000L + " AND " + endOfDay.getTime() / 1000L + ")";
 			}
-			
+
 			ResultSet rs = conn.createStatement().executeQuery(Query);
+			// Si se registro un error, se procedera a enviar un correo
 			if (rs.next()) {
 				int count = rs.getInt(1);
 				System.out.println("Will try to Mail Exception - cId: " + this.getCourseId() + " - "
 						+ " errors this day: " + count);
 				if (count <= 1) {
+					// Enviar solo si es el primer error del dia.
 					sendExceptionEmail(asistance_date, responseMessage, codigo, currentTime);
 				}
 			}
@@ -199,8 +205,8 @@ public class Index {
 		return codigo;
 	}
 
-	private void sendExceptionEmail(Date fechaAsistencia1, String responseMessage, int responseCode,
-			Date currentTime) throws ParseException {
+	private void sendExceptionEmail(Date fechaAsistencia1, String responseMessage, int responseCode, Date currentTime)
+			throws ParseException {
 		String emailBody = "<html xmlns=\"http://www.w3.org/1999/xhtml\"> <head> <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/> <title>Documento sin título</title> <style>body{background: #FFFFFF; color: #333333; font-family: Tahoma, Geneva, sans-serif; font-size: 14px; width: 800px; margin: 50px 40px 40px 60px;}p{text-align: justify;}.pie{text-align: center; font-size: 11px; color: #969696;}.tabla{border: thin solid #666666; border-collapse: collapse;}.tabla th{background-color: #A2A983;}</style> </head> <body> <p> El sistema de registro de Asistencia en la <b>Carpeta Electr&oacute;nica Docente</b> para cursos en la modalidad <b>Semipresencial</b> ha detectado un error : </p><table width=\"800\" border=\"1\" align=\"center\" class=\"tabla\" cellpadding=\"0\" cellspacing=\"0\"> <tr align=\"center\"> <th>COD.</th> <th>MENSAJE</th> <th>CATEGOR&Iacute;A</th> <th>FECHA ASIST.</th> <th>FECHA WS</th> </tr><tr align=\"center\"> <td>%dato1</td><td>%dato2</td><td>%dato3</td><td>%dato6</td><td>%dato7</td></tr></table> <p class=\"pie\"> Direcci&oacute;n de Tecnolog&iacute;as Educativas AIEP. </p></body> </html>";
 		String Categoria = "";
 		if (responseCode == 4)
@@ -220,8 +226,10 @@ public class Index {
 		mail.setSubject("ERROR EN CARPETA ELECTRONICA DOCENTE");
 		mail.setBody(emailBody);
 		mail.addTo("cesar.bonilla@laureate.net");
-		mail.addTo("Francisco.Vergara@aiep.cl");
-		mail.addTo("Jose.Carcamo@aiep.cl");
+		mail.addTo("francisco.vergara@aiep.cl");
+		mail.addTo("dte@aiep.cl");
+		mail.addTo("soporte@soporte.aiep.cl");
+		mail.addTo("jose.Carcamo@aiep.cl");
 		mail.doNotBccSender();
 
 		try {
@@ -245,16 +253,21 @@ public class Index {
 			String rut = data[i].split(":")[0];
 			int semana = Integer.valueOf(data[i].split(":")[1]);
 			Calendar cal = Calendar.getInstance();
-			cal.setTime(new SimpleDateFormat("dd/MM/yyyy").parse(this.Semanas[semana - 1][0]));
 
+			if (diasProgramadosSemana.size() == 0) {
+				throw new Exception("No se encontraron clases programadas para este modulo.");
+			}
+			int[] diasProgramados = diasProgramadosSemana.get(semana - 1);
 			for (int j = 0; j < diasProgramados.length; j++) {
+				cal.setTime(new SimpleDateFormat("dd/MM/yyyy").parse(semanasList.get(semana - 1)[0]));
 				cal.add(Calendar.DAY_OF_WEEK, diasProgramados[j] - 1);
-				System.out.println("Regulizando Asistencia para " + cal.getTime() + " con rut: " + rut);
+				System.out.println("Regulizando Asistencia para semana " +semana+" - " + cal.getTime() + " con rut: " + rut);
 				int codigo = this.registrarAsistencia(cal.getTime(), rut);
-				cal.setTime(new SimpleDateFormat("dd/MM/yyyy").parse(this.Semanas[semana - 1][0]));
+
 				if (codigo == 0 || codigo == 10) {
 					continue;
 				}
+
 				// WebService Exception Handling
 				if (codigo == 4) {
 					throw new Exception("ERROR 4 - Alumno no econtrado");
@@ -279,7 +292,8 @@ public class Index {
 	}
 
 	public void calculateWeeks() throws Exception {
-		String queryString = "select * from course_main WHERE course_id='" + this.getCourseId() + "'";
+		String queryString = "select START_DATE,END_DATE from course_main WHERE course_id='" + this.getCourseId() + "'";
+		System.out.println("calculateWeeks: Course ID Query: " + queryString);
 		ConnectionManager cManager = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = cManager.getConnection();
 
@@ -310,14 +324,14 @@ public class Index {
 		delta = (delta / 1000L) / (60 * 60 * 24) + 1;
 		int weeks = (int) (Math.round((delta / 7)));
 
-		Semanas = new String[weeks][2];
-
 		cal.setTime(date_i);
 		for (int i = 0; i < weeks; i++) {
-			Semanas[i][0] = new SimpleDateFormat("dd/MM/yyyy").format(cal.getTime());
+			String startOfWeek = new SimpleDateFormat("dd/MM/yyyy").format(cal.getTime());
 			cal.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY);
-			Semanas[i][1] = new SimpleDateFormat("dd/MM/yyyy").format(cal.getTime());
-			cal.add(Calendar.DATE, 1);
+			String endOfWeek = new SimpleDateFormat("dd/MM/yyyy").format(cal.getTime());
+			cal.add(Calendar.DAY_OF_WEEK, 1);
+			semanasList.add(new String[] { startOfWeek, endOfWeek });
+
 		}
 
 		queryString = " SELECT DISTINCT(id_dia) FROM lnoh_horario_docente WHERE modulo='" + this.getModulo()
@@ -325,15 +339,46 @@ public class Index {
 				+ this.getSemestre()
 				+ " AND (nom_edificio LIKE '%VIRTUAL%' OR nom_sala LIKE '%VIRTUAL%' OR nom_edificio LIKE '%ONL%')";
 
+		System.out.println("calculateWeeks: ID DIAS Query: " + queryString);
+
 		Statement sql = conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY);
 		resultSet = sql.executeQuery(queryString);
+		int[] diasProgramados = null;
+
 		if (resultSet.last()) {
-			this.diasProgramados = new int[resultSet.getRow()];
+			diasProgramados = new int[resultSet.getRow()];
 			resultSet.beforeFirst();
 			System.out.println("Dias online programados para " + this.getCourseId() + ": " + diasProgramados.length);
 			while (resultSet.next()) {
+				// Agregar los dias programados
 				diasProgramados[resultSet.getRow() - 1] = resultSet.getInt(1);
 			}
+		} else {
+			diasProgramados = new int[0];
+		}
+
+		String[] lastWeekArray = semanasList.get(semanasList.size() - 1);
+		Date lastWeekStart = new SimpleDateFormat("dd/MM/yyyy").parse(lastWeekArray[0]);
+		Date lastWeekEnd = new SimpleDateFormat("yyyy-M-d").parse(fecha_fin);
+
+		for (int i = 0; i < this.semanasList.size()-1; i++) {
+			diasProgramadosSemana.add(diasProgramados);
+		}
+
+		ArrayList<Integer> clasesUltimaSemana = new ArrayList<Integer>();
+		for (int j = 0; j < diasProgramados.length; j++) {
+			Calendar tempCalendar = Calendar.getInstance();
+			tempCalendar.setTime(lastWeekStart);
+			tempCalendar.add(Calendar.DAY_OF_WEEK, diasProgramados[j] - 1);
+			if (tempCalendar.getTime().compareTo(lastWeekEnd) <= 0) {
+				clasesUltimaSemana.add(diasProgramados[j]);
+			}
+		}
+		// Si no hay clases, eliminar la ultima semana
+		if (clasesUltimaSemana.size() == 0) {
+			semanasList.remove(semanasList.size() - 1);
+		} else {
+			System.out.println("CED: La ultima semana de "+this.getCourseId()+" tiene clases virtuales programadas.");
 		}
 
 		resultSet.close();
@@ -348,25 +393,26 @@ public class Index {
 	}
 
 	public String renderWeeksStudent(User user) throws Exception {
-		String rows = "";
-		for (int i = 0; i < Semanas.length; i++) {
-			Date inicio_semana = new SimpleDateFormat("dd/MM/yyyy").parse(Semanas[i][0]);
-			Date fin_semana = new SimpleDateFormat("dd/MM/yyyy").parse(Semanas[i][1]);
+		String items = "";
+		ArrayList<String> weeksItems = new ArrayList<String>();
+		for (int i = 0; i < semanasList.size(); i++) {
+			Date inicio_semana = new SimpleDateFormat("dd/MM/yyyy").parse(semanasList.get(i)[0]);
+			Date fin_semana = new SimpleDateFormat("dd/MM/yyyy").parse(semanasList.get(i)[1]);
 
 			// OPEN DB CONNECTION
 			ConnectionManager cManager = BbDatabase.getDefaultInstance().getConnectionManager();
 			Connection conn = cManager.getConnection();
 
 			String queryString = "SELECT Count(*) FROM lnoh_ced_response WHERE rut_estudiante='" + user.getStudentId()
-					+ "' AND id_curso='" + this.getCourseId() + "' AND codigo IN(0,10) AND fecha_ws BETWEEN "
+					+ "' AND id_curso='" + this.getCourseId() + "' AND codigo IN(0,10) AND fecha_asistencia BETWEEN "
 					+ (inicio_semana.getTime() / 1000L) + " AND " + (fin_semana.getTime() / 1000L);
 			ResultSet rSet = conn.prepareStatement(queryString).executeQuery();
 
-			String estado = "<td><font color=\"red\">Asistencia No Registrada</font></td>";
+			String estado = "<img width=\"20\" src=\"Resources/cross.png\">";
 			if (rSet.next()) {
 				int count = rSet.getInt(1);
 				if (count > 0) {
-					estado = "<td><font color=\"green\">Asistencia Registrada</font></td>";
+					estado = "<img width=\"20\" src=\"Resources/check.png\">";
 				} else {
 					// Intentar Registrar Asistencia
 					Date now = Calendar.getInstance().getTime();
@@ -376,12 +422,14 @@ public class Index {
 						// Por cada clase programada
 						Calendar tempCal = Calendar.getInstance();
 						tempCal.setTime(inicio_semana);
-						for (int j = 0; j < diasProgramados.length; j++) {
-							int dia = Integer.valueOf(diasProgramados[j]);
+						for (int j = 0; j < diasProgramadosSemana.get(i).length; j++) {
+							int dia = diasProgramadosSemana.get(i)[j];//Integer.valueOf(diasProgramados[j]);
 							tempCal.add(Calendar.DATE, dia - 1);
-							int code = registrarAsistencia(tempCal.getTime(), user);
+							int code = registrarAsistencia(tempCal.getTime(), user.getStudentId());
+							// int codigo =
+							// this.registrarAsistencia(cal.getTime(), rut);
 							if (code == 0 || code == 10) {
-								estado = "<td><font color=\"green\">Asistencia Registrada</font></td>";
+								estado = "<img width=\"20\" src=\"Resources/check.png\">";
 							}
 						}
 					}
@@ -392,20 +440,40 @@ public class Index {
 			conn.close();
 			cManager.close();
 			// HTML CODE
-			rows += "<tr><th>Semana " + (i + 1) + "</th></tr>";
-			rows += "<tr><td>" + Semanas[i][0] + " - " + Semanas[i][1] + "</td></tr>";
-			rows += "<tr>" + estado + "</tr>";
+			String temp = "";
+			temp = "<h4> Semana " + (i + 1) + " <small> (" + semanasList.get(i)[0] + " - " + semanasList.get(i)[1]
+					+ ")</small>" + estado + "</h4>";
+			temp = "<li class=\"list-group-item\">" + temp + "</li>";
+			weeksItems.add(temp);
+			// items += temp;
 		} // ENDFOR
+		String columns = "";
+		String columnContent = "";
+		System.out.println("CED: " + this.getCourseId() + " tiene " + weeksItems.size() + " semanas.");
+		for (int i = 0; i < weeksItems.size(); i++) {
+			columnContent = columnContent + weeksItems.get(i);
+			if (i % 5 == 0 && i > 0) {
+				columns += "<div style=\"width:360px; display:inline-block; vertical-align:top;\">" + columnContent
+						+ "</div>";
+				columnContent = "";
+				System.out.println("CED: Making column of six.");
+			}
+		}
+		if (columns == "" || columnContent != "") {
+			System.out.println("CED: Making column of six.");
+			columns += "<div style=\"width:360px; display:inline-block; vertical-align:top;\">" + columnContent
+					+ "</div>";
+		}
 
-		return rows;
+		return columns;
 	}
 
 	public String renderTableHeaders() throws Exception {
 		String row = "<th>Nombre</th>";
-		for (int i = 0; i < Semanas.length; i++) {
+		for (int i = 0; i < semanasList.size(); i++) {
 			String temp = "<p>Semana " + (i + 1) + "</p>";
-			temp += "<p>" + Semanas[i][0] + "</p>";
-			temp += "<p>" + Semanas[i][1] + "</p>";
+			temp += "<p>" + semanasList.get(i)[0] + "</p>";
+			temp += "<p>" + semanasList.get(i)[1] + "</p>";
 			temp = "<th>" + temp + "</th>";
 			row += temp;
 		}
@@ -425,30 +493,28 @@ public class Index {
 			if (cm.getRole().getDbRole().getIdentifier().equalsIgnoreCase("Estudiante")) {
 				String cell = "<td>" + currentUser.getGivenName() + " " + currentUser.getFamilyName() + "</td>";
 
-				// TODO Render Week Checkbox Cells
-				// String log = "";
-				// String queryString = "";
-				for (int j = 0; j < Semanas.length; j++) {
+				ConnectionManager cManager = BbDatabase.getDefaultInstance().getConnectionManager();
+				Connection conn = cManager.getConnection();
+				PreparedStatement query = null;
+				ResultSet rSet = null;
 
-					Date inicio_semana = new SimpleDateFormat("dd/MM/yyyy").parse(Semanas[j][0]);
-					Date fin_semana = new SimpleDateFormat("dd/MM/yyyy").parse(Semanas[j][1]);
+				for (int j = 0; j < semanasList.size(); j++) {
+
+					Date inicio_semana = new SimpleDateFormat("dd/MM/yyyy").parse(semanasList.get(j)[0]);
+					Date fin_semana = new SimpleDateFormat("dd/MM/yyyy").parse(semanasList.get(j)[1]);
 					// Initialize connection
-					ConnectionManager cManager = BbDatabase.getDefaultInstance().getConnectionManager();
-					Connection conn = cManager.getConnection();
+					String preparedQuery = "SELECT Count(*) FROM lnoh_ced_response WHERE rut_estudiante='"
+							+ currentUser.getStudentId()
+							+ "' AND id_curso=? AND codigo IN(0,10) AND fecha_asistencia BETWEEN ? AND ?";
 
 					String queryStringTemp = "SELECT Count(*) FROM lnoh_ced_response WHERE rut_estudiante='"
 							+ currentUser.getStudentId() + "' AND id_curso='" + this.getCourseId()
-							+ "' AND codigo IN(0,10) AND fecha_ws BETWEEN " + (inicio_semana.getTime() / 1000L)
+							+ "' AND codigo IN(0,10) AND fecha_asistencia BETWEEN " + (inicio_semana.getTime() / 1000L)
 							+ " AND " + (fin_semana.getTime() / 1000L);
 
-					// queryString += "Semana " + (j + 1) + " Query: " +
-					// queryStringTemp + "\n";
-
-					PreparedStatement query = conn.prepareStatement(queryStringTemp, Statement.NO_GENERATED_KEYS);
-					ResultSet rSet = query.executeQuery();
+					query = conn.prepareStatement(queryStringTemp, Statement.NO_GENERATED_KEYS);
+					rSet = query.executeQuery();
 					if (rSet.next()) {
-						// log += "<p>Semana " + (j+1) + ": COUNT: " + temp +
-						// "</p>";
 						int count = rSet.getInt(1);
 						if (count > 0) {
 							String weekCell = "<td><img width=\"15\" src=\"Resources/check.png\"></td>";
@@ -459,11 +525,11 @@ public class Index {
 						}
 					}
 					// Close DB Connection
-					query.close();
-					rSet.close();
-					conn.close();
-					cManager.close();
 				}
+				query.close();
+				rSet.close();
+				conn.close();
+				cManager.close();
 				content += "<tr rut=\"" + currentUser.getStudentId() + "\">" + cell + "</tr>";
 			}
 		}

@@ -50,8 +50,8 @@ public class Index {
 	private String anio;
 	private String semestre;
 	private Context ctx;
+	private Date endOfCourse;
 	private ArrayList<String[]> semanasList = new ArrayList<String[]>();
-	// private int[] diasProgramados;
 	private ArrayList<int[]> diasProgramadosSemana = new ArrayList<int[]>();
 	private ArrayList<Integer> errorCodes = new ArrayList<Integer>(Arrays.asList(4, 5, 7, 8, 9, 11, 12, 16));
 
@@ -73,8 +73,7 @@ public class Index {
 		setSemestre(courseIdComposers[3]);
 
 		this.calculateWeeks();
-
-		Response r = cedProxy.loginMoodle("Moodle", "ET33OI8994FAQ351P");
+		Response r = cedProxy.loginMoodle("moodle", "ET33OI8994FAQ351P");
 		this.token = r.getMensaje();
 
 		if (ctx.getRequest().getMethod() == "POST") {
@@ -102,16 +101,17 @@ public class Index {
 
 		String queryString = "";
 		if (BbDatabase.getDefaultInstance().isOracle()) {
-			queryString = "insert into lnoh_ced_response VALUES " + "(LNOH_CED_RESPONSE_SEQ.nextVal, '"
-					+ user.getStudentId() + "','" + this.getCourseId() + "'," + date.getTime() / 1000L + ","
-					+ (System.currentTimeMillis() / 1000L) + "," + response.getCodigo() + ")";
-		} else {
-			queryString = "insert into lnoh_ced_response VALUES " + "(nextval('lnoh_ced_response_seq'), '"
-					+ user.getStudentId() + "','" + this.getCourseId() + "'," + fechaAsistencia + ","
-					+ (System.currentTimeMillis() / 1000L) + "," + response.getCodigo() + ")";
-		}
+			
+			queryString = "insert into lnoh_ced_response VALUES (LNOH_CED_RESPONSE_SEQ.nextVal,?,?,?,?,?)";
 
+		} 
+		
 		PreparedStatement query = conn.prepareStatement(queryString, Statement.NO_GENERATED_KEYS);
+		query.setString(1, user.getStudentId());
+		query.setString(2, getCourseId());
+		query.setInt(3, (int)(date.getTime() / 1000L));
+		query.setInt(4, (int)(System.currentTimeMillis() / 1000L));
+		query.setInt(5, response.getCodigo());
 		query.execute();
 
 		query.close();
@@ -141,18 +141,17 @@ public class Index {
 		Connection conn = cManager.getConnection();
 
 		String queryString = "";
-		Date currentTime = new Date(System.currentTimeMillis());
 		if (BbDatabase.getDefaultInstance().isOracle()) {
-			queryString = "insert into lnoh_ced_response VALUES (LNOH_CED_RESPONSE_SEQ.nextVal, '" + rut + "','"
-					+ this.getCourseId() + "'," + (asistance_date.getTime() / 1000L) + ","
-					+ (currentTime.getTime() / 1000L) + "," + response.getCodigo() + ")";
-		} else {
-			queryString = "insert into lnoh_ced_response VALUES (nextval('lnoh_ced_response_seq'), '" + rut + "','"
-					+ this.getCourseId() + "'," + (asistance_date.getTime() / 1000L) + ","
-					+ (currentTime.getTime() / 1000L) + "," + response.getCodigo() + ")";
+			queryString = "insert into lnoh_ced_response VALUES (LNOH_CED_RESPONSE_SEQ.nextVal,?,?,?,?,?)";
+			
 		}
 
 		PreparedStatement query = conn.prepareStatement(queryString, Statement.NO_GENERATED_KEYS);
+		query.setString(1, rut);
+		query.setString(2, getCourseId());
+		query.setInt(3, (int)(asistance_date.getTime() / 1000L));
+		query.setInt(4, (int)(System.currentTimeMillis() / 1000L));
+		query.setInt(5, response.getCodigo());
 		query.execute();
 
 		// WEB SERVICE ERROR HANDLING
@@ -173,29 +172,31 @@ public class Index {
 			// Manejar errores de CED
 			if (codigo == 4) {
 				// Error de tipo Usuario
-				Query = "SELECT COUNT(*) FROM LNOH_CED_RESPONSE WHERE codigo=" + codigo + "AND ID_CURSO='"
+				/*Query = "SELECT COUNT(*) FROM LNOH_CED_RESPONSE WHERE codigo=" + codigo + "AND ID_CURSO='"
 						+ this.getCourseId() + "' AND (fecha_ws BETWEEN " + startOfDay.getTime() / 1000L + " AND "
-						+ endOfDay.getTime() / 1000L + ")";
-			} else {
-				// Error de tipo Curso
-				Query = "SELECT COUNT(*) FROM LNOH_CED_RESPONSE WHERE rut_estudiante='" + rut + "' AND codigo=" + codigo
-						+ "AND ID_CURSO='" + this.getCourseId() + "' AND (fecha_ws BETWEEN "
-						+ startOfDay.getTime() / 1000L + " AND " + endOfDay.getTime() / 1000L + ")";
+						+ endOfDay.getTime() / 1000L + ")";*/
+				
+				Query = "SELECT COUNT(*) FROM LNOH_CED_RESPONSE WHERE codigo= ? AND ID_CURSO=? AND (fecha_ws BETWEEN ? AND ?)";
 			}
 
-			ResultSet rs = conn.createStatement().executeQuery(Query);
+			PreparedStatement preparedQuery = conn.prepareStatement(Query);
+			preparedQuery.setInt(1, codigo);
+			preparedQuery.setString(2, getCourseId());
+			preparedQuery.setInt(3, (int)(startOfDay.getTime() / 1000L));
+			preparedQuery.setInt(4, (int)(endOfDay.getTime() / 1000L));
+			
+			ResultSet rs = preparedQuery.executeQuery();
 			// Si se registro un error, se procedera a enviar un correo
 			if (rs.next()) {
 				int count = rs.getInt(1);
-				System.out.println("Will try to Mail Exception - cId: " + this.getCourseId() + " - "
-						+ " errors this day: " + count);
 				if (count <= 1) {
 					// Enviar solo si es el primer error del dia.
-					sendExceptionEmail(asistance_date, responseMessage, codigo, currentTime);
+					sendExceptionEmail(asistance_date, responseMessage, codigo,new Date(System.currentTimeMillis()) );
 				}
 			}
 		}
-
+		
+		cManager.releaseConnection(conn);
 		query.close();
 		query = null;
 		conn.close();
@@ -216,7 +217,7 @@ public class Index {
 		emailBody = emailBody.replace("%dato1", String.valueOf(responseCode));
 		emailBody = emailBody.replace("%dato2", responseMessage);
 		emailBody = emailBody.replace("%dato3", Categoria);
-		SimpleDateFormat sdf = new SimpleDateFormat("ddMMyyyy");
+		//SimpleDateFormat sdf = new SimpleDateFormat("ddMMyyyy");
 		String fecha_asistencia = new SimpleDateFormat("dd/MM/yyyy").format(fechaAsistencia1);
 		emailBody = emailBody.replace("%dato6", fecha_asistencia);
 		emailBody = emailBody.replace("%dato7", new SimpleDateFormat("dd/MM/yyyy").format(currentTime));
@@ -292,14 +293,33 @@ public class Index {
 	}
 
 	public void calculateWeeks() throws Exception {
-		String queryString = "select START_DATE,END_DATE from course_main WHERE course_id='" + this.getCourseId() + "'";
-		System.out.println("calculateWeeks: Course ID Query: " + queryString);
+		//String queryString = "select START_DATE,END_DATE from course_main WHERE course_id='" + this.getCourseId() + "'";
+		StringBuilder queryBuilder = new StringBuilder();
+		/*queryBuilder.append("SELECT MIN(TO_DATE(REGEXP_SUBSTR(FECHA_OCUPADA, '^.{10}'),'yyyy-MM-dd')) \"START_DATE\", ");
+		queryBuilder.append("MAX(TO_DATE(REGEXP_SUBSTR(FECHA_LIBERADA, '^.{10}'),'yyyy-MM-dd')) \"END_DATE\"");
+		queryBuilder.append("FROM lnoh_horario_docente WHERE modulo='{Modulo}' AND SECCION = {Seccion} ");
+		queryBuilder.append("AND ano_proceso={Anio} AND semestre_proceso={Semestre}");*/
+		
+		queryBuilder.append("SELECT MIN(TO_DATE(REGEXP_SUBSTR(FECHA_OCUPADA, '^.{10}'),'yyyy-MM-dd')) \"START_DATE\", ");
+		queryBuilder.append("MAX(TO_DATE(REGEXP_SUBSTR(FECHA_LIBERADA, '^.{10}'),'yyyy-MM-dd')) \"END_DATE\"");
+		queryBuilder.append("FROM lnoh_horario_docente WHERE modulo=? AND SECCION = ? ");
+		queryBuilder.append("AND ano_proceso=? AND semestre_proceso=?");
+		
 		ConnectionManager cManager = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = cManager.getConnection();
 
-		// Pre-compile the Query
-		PreparedStatement query = conn.prepareStatement(queryString, Statement.NO_GENERATED_KEYS);
-		ResultSet resultSet = query.executeQuery();
+		PreparedStatement preparedQuery = conn.prepareStatement(queryBuilder.toString());
+		preparedQuery.setString(1, getModulo());
+		preparedQuery.setInt(2, Integer.valueOf(getSeccion()));
+		preparedQuery.setInt(3, Integer.valueOf(getSeccion()));
+		preparedQuery.setInt(4, Integer.valueOf(getAnio()));
+		preparedQuery.setInt(5, Integer.valueOf(getSemestre()));
+		/*tempQuery = tempQuery.replace("{Modulo}", this.getModulo());
+		tempQuery = tempQuery.replace("{Seccion}", this.getSeccion());
+		tempQuery = tempQuery.replace("{Anio}", this.getAnio());
+		tempQuery = tempQuery.replace("{Semestre}", this.getSemestre());*/
+		
+		ResultSet resultSet = preparedQuery.executeQuery();
 		String fecha_inicio = "";
 		String fecha_fin = "";
 		if (resultSet.next()) {
@@ -334,18 +354,29 @@ public class Index {
 
 		}
 
-		queryString = " SELECT DISTINCT(id_dia) FROM lnoh_horario_docente WHERE modulo='" + this.getModulo()
+		/*String queryString = " SELECT DISTINCT(id_dia) FROM lnoh_horario_docente WHERE modulo='" + this.getModulo()
 				+ "' AND seccion=" + this.getSeccion() + " AND ano_proceso=" + this.getAnio() + " AND semestre_proceso="
 				+ this.getSemestre()
-				+ " AND (nom_edificio LIKE '%VIRTUAL%' OR nom_sala LIKE '%VIRTUAL%' OR nom_edificio LIKE '%ONL%')";
+				+ " AND (nom_edificio LIKE '%VIRTUAL%' OR nom_sala LIKE '%VIRTUAL%' OR nom_edificio LIKE '%ONL%')";*/
+		
+		String queryString = " SELECT DISTINCT(id_dia) FROM lnoh_horario_docente WHERE modulo= ? AND seccion= ? AND ano_proceso= ? "
+				+ "AND semestre_proceso= ? AND (nom_edificio LIKE '%VIRTUAL%' "
+				+ "OR nom_sala LIKE '%VIRTUAL%' OR nom_edificio LIKE '%ONL%')";
 
 		System.out.println("calculateWeeks: ID DIAS Query: " + queryString);
 
-		Statement sql = conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY);
-		resultSet = sql.executeQuery(queryString);
+		
+		preparedQuery = conn.prepareStatement(queryString);
+		preparedQuery.setString(1, getModulo());
+		preparedQuery.setInt(2, Integer.valueOf(getSeccion()));
+		preparedQuery.setInt(3, Integer.valueOf(getAnio()));
+		preparedQuery.setInt(4, Integer.valueOf(getSemestre()));
+		
+		
+		resultSet = preparedQuery.executeQuery();
 		int[] diasProgramados = null;
 
-		if (resultSet.last()) {
+		if (resultSet.last())  {
 			diasProgramados = new int[resultSet.getRow()];
 			resultSet.beforeFirst();
 			System.out.println("Dias online programados para " + this.getCourseId() + ": " + diasProgramados.length);
@@ -380,15 +411,14 @@ public class Index {
 		} else {
 			System.out.println("CED: La ultima semana de "+this.getCourseId()+" tiene clases virtuales programadas.");
 		}
-
+		
+		cManager.releaseConnection(conn);
 		resultSet.close();
-		query.close();
 		conn.close();
 		cManager.close();
 
 		cManager = null;
 		resultSet = null;
-		query = null;
 		conn = null;
 	}
 
@@ -403,10 +433,19 @@ public class Index {
 			ConnectionManager cManager = BbDatabase.getDefaultInstance().getConnectionManager();
 			Connection conn = cManager.getConnection();
 
-			String queryString = "SELECT Count(*) FROM lnoh_ced_response WHERE rut_estudiante='" + user.getStudentId()
+			/*String queryString = "SELECT Count(*) FROM lnoh_ced_response WHERE rut_estudiante='" + user.getStudentId()
 					+ "' AND id_curso='" + this.getCourseId() + "' AND codigo IN(0,10) AND fecha_asistencia BETWEEN "
-					+ (inicio_semana.getTime() / 1000L) + " AND " + (fin_semana.getTime() / 1000L);
-			ResultSet rSet = conn.prepareStatement(queryString).executeQuery();
+					+ (inicio_semana.getTime() / 1000L) + " AND " + (fin_semana.getTime() / 1000L);*/
+			
+			String queryString = "SELECT Count(*) FROM lnoh_ced_response WHERE rut_estudiante=? AND id_curso=? AND codigo IN(0,10) AND fecha_asistencia BETWEEN ? AND ?";
+			
+			PreparedStatement preparedQuery = conn.prepareStatement(queryString);
+			preparedQuery.setString(1, user.getStudentId());
+			preparedQuery.setString(2, getCourseId());
+			preparedQuery.setInt(3, (int)(inicio_semana.getTime() / 1000L));
+			preparedQuery.setInt(4, (int)(fin_semana.getTime() / 1000L));
+			
+			ResultSet rSet = preparedQuery.executeQuery();
 
 			String estado = "<img width=\"20\" src=\"Resources/cross.png\">";
 			if (rSet.next()) {
@@ -421,13 +460,14 @@ public class Index {
 						System.out.println("Registrando asistencia para la semana " + (i + 1));
 						// Por cada clase programada
 						Calendar tempCal = Calendar.getInstance();
-						tempCal.setTime(inicio_semana);
+
 						for (int j = 0; j < diasProgramadosSemana.get(i).length; j++) {
+							tempCal.setTime(inicio_semana);
 							int dia = diasProgramadosSemana.get(i)[j];//Integer.valueOf(diasProgramados[j]);
 							tempCal.add(Calendar.DATE, dia - 1);
+							
+							System.out.println("Registrando asistencia para el dia:  "+tempCal.getTime());
 							int code = registrarAsistencia(tempCal.getTime(), user.getStudentId());
-							// int codigo =
-							// this.registrarAsistencia(cal.getTime(), rut);
 							if (code == 0 || code == 10) {
 								estado = "<img width=\"20\" src=\"Resources/check.png\">";
 							}
@@ -456,12 +496,12 @@ public class Index {
 				columns += "<div style=\"width:360px; display:inline-block; vertical-align:top;\">" + columnContent
 						+ "</div>";
 				columnContent = "";
-				System.out.println("CED: Making column of six.");
+				//System.out.println("CED: Making column of six.");
 			}
 		}
 		if (columns == "" || columnContent != "") {
-			System.out.println("CED: Making column of six.");
-			columns += "<div style=\"width:360px; display:inline-block; vertical-align:top;\">" + columnContent
+			//System.out.println("CED: Making column of six.");
+			columns += "<div style=\"width:50%; display:inline-block; vertical-align:top;\">" + columnContent
 					+ "</div>";
 		}
 
@@ -471,9 +511,9 @@ public class Index {
 	public String renderTableHeaders() throws Exception {
 		String row = "<th>Nombre</th>";
 		for (int i = 0; i < semanasList.size(); i++) {
-			String temp = "<p>Semana " + (i + 1) + "</p>";
-			temp += "<p>" + semanasList.get(i)[0] + "</p>";
-			temp += "<p>" + semanasList.get(i)[1] + "</p>";
+			String temp = "Semana " + (i + 1) + "<br>";
+			temp += semanasList.get(i)[0] + "<br>";
+			temp += semanasList.get(i)[1];
 			temp = "<th>" + temp + "</th>";
 			row += temp;
 		}
@@ -490,7 +530,7 @@ public class Index {
 			CourseMembership cm = CourseMembershipDbLoader.Default.getInstance()
 					.loadByCourseAndUserId(this.ctx.getCourseId(), currentUser.getId());
 
-			if (cm.getRole().getDbRole().getIdentifier().equalsIgnoreCase("Estudiante")) {
+			if (cm.getRole().getDbRole().getIdentifier().equalsIgnoreCase("S")) {
 				String cell = "<td>" + currentUser.getGivenName() + " " + currentUser.getFamilyName() + "</td>";
 
 				ConnectionManager cManager = BbDatabase.getDefaultInstance().getConnectionManager();
@@ -502,10 +542,6 @@ public class Index {
 
 					Date inicio_semana = new SimpleDateFormat("dd/MM/yyyy").parse(semanasList.get(j)[0]);
 					Date fin_semana = new SimpleDateFormat("dd/MM/yyyy").parse(semanasList.get(j)[1]);
-					// Initialize connection
-					String preparedQuery = "SELECT Count(*) FROM lnoh_ced_response WHERE rut_estudiante='"
-							+ currentUser.getStudentId()
-							+ "' AND id_curso=? AND codigo IN(0,10) AND fecha_asistencia BETWEEN ? AND ?";
 
 					String queryStringTemp = "SELECT Count(*) FROM lnoh_ced_response WHERE rut_estudiante='"
 							+ currentUser.getStudentId() + "' AND id_curso='" + this.getCourseId()

@@ -12,10 +12,10 @@
       <id value="LNOH"/>
       <name value="LNOH"/>
       <url value="" />
-      <description value="Laureate " />
+      <description value="Laureate "/>
     </vendor>
     <http-actions>
-    	<config value="settings.jsp" />
+    	<config value="settings.jsp"/>
     </http-actions> 
     <content-handlers>
     </content-handlers>
@@ -23,46 +23,9 @@
     	<application handle="CED" name="Carpeta Electronica Docente" is-course-tool="true" is-org-tool="false" can-allow-guest="false" use-ssl="false">
     		<description>Registra la asistencia para los estudiantes.</description>
     		<links>
-    			<link>
-    				<type value="course_tool"/>
-		            <name value="Modulo - CED"/>
-		            <url value="modulo_asistencia.jsp"/>
-		            <description value="Vista de asistencia para los estudiantes"/>
-    			</link>
-    			<link>
-    				<type value="course_tool"/>
-		            <name value="Regularizar Asistencia"/>
-		            <url value="regulizador.jsp"/>
-		            <description value="Regularizar Asistencia"/>
-    			</link>
-    			<link>
-    				<type value="system_tool"/>
-		            <name value="Volcado Data CED"/>
-		            <url value="volcadoData.jsp"/>
-		            <description value="Volcado Data CED"/>
-    			</link>
     		</links>
     	</application>
     </application-defs>
-    
-    <module-defs>
-    	<module-type ext-ref="ced_module" title="Mi Asistencia" uicreatable="true">
-    		<jsp-dir>CED_MODULE</jsp-dir>
-    		<jsp>
-    			<view>modulo_asistencia.jsp</view>
-    		</jsp>
-    	</module-type>
-    	<module type="portal/bookmarks" isadmin="true" hidetitle="false" useraddable="true" isdeletable="false" isdetachable="false" isavailabletocourse="true" isavailabletoorganization="false" ext-ref="ced_module" title="Mi Asistencia CED">
-            <description format="H">Asistencia+por+semana+para+los+estudiantes.</description>
-            <ExtraInfo />
-            <module-groups>
-                <module-group id="everyone" />
-            </module-groups>
-            <jsp>
-            	<view>modulo_asistencia.jsp</view>
-            </jsp>
-        </module>
-    </module-defs>
     
     <schema-dirs>
 	  <schema-dir dir-name="WsResponses" />

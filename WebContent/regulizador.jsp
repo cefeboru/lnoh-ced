@@ -8,14 +8,10 @@
 <%@ page import="java.util.Map"%>
 
 
-<%@taglib uri="/bbData" prefix="bbData"%>
+<%@ taglib uri="/bbData" prefix="bbData"%>
 <%@ taglib uri="/bbNG" prefix="bbNG"%>
 
-<link
-	href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"
-	rel="stylesheet"
-	integrity="sha256-7s5uDGW3AHqw6xtJmNNtr+OBRJUlgkNJEo78P4b0yRw= sha512-nNo+yCHEyn0smMxSswnf/OnX6/KwJuZTlNZBjauKhTK0c+zT+q5JOCx0UFhXQ6rJR9jg6Es8gPuD2uZcYDLqSw=="
-	crossorigin="anonymous">
+<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
 thead tr th p, thead tr th {
@@ -28,7 +24,7 @@ thead tr th p, thead tr th {
 </style>
 
 <bbNG:learningSystemPage ctxId="bbContext">
-	<bbNG:breadcrumbBar environment="COURSE">
+	<bbNG:breadcrumbBar environment="CTRL_PANEL ">
 		<bbNG:breadcrumb>Regularizador de Asistencia</bbNG:breadcrumb>
 		<bbNG:pageHeader>
 			<bbNG:pageTitleBar title="Regularizar Asistencia">Regularizar Asistencia</bbNG:pageTitleBar>
@@ -52,6 +48,9 @@ thead tr th p, thead tr th {
 	<button id="btnRegistrar" onclick="sendData()" type="button"
 		class="btn btn-default">Registrar Asistencia</button>
 	<script>
+	document.getElementsByTagName("head")[0].innerHTML = document.getElementsByTagName("head")[0].innerHTML + '<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet">'
+	
+	
 		function sendData() {
 			var form = document.getElementById("regulizarForm");
 			if (form) {

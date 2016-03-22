@@ -41,7 +41,7 @@ import blackboard.platform.email.BbMailManagerFactory;
 
 public class Index {
 
-	private WSAsistenciaSoapProxy cedProxy;
+	//private WSAsistenciaSoapProxy cedProxy;
 	private String id_curso;
 	private String rut_estudiante;
 	private String seccion;
@@ -62,7 +62,7 @@ public class Index {
 
 		this.ctx = bbContext;
 		// Instanciar el WeService
-		cedProxy = new WSAsistenciaSoapProxy();
+		//cedProxy = new WSAsistenciaSoapProxy();
 
 		// Obtener ID del curso
 		this.setCourseId(this.ctx.getCourse().getCourseId());
@@ -73,8 +73,8 @@ public class Index {
 		setSemestre(courseIdComposers[3]);
 
 		this.calculateWeeks();
-		Response r = cedProxy.loginMoodle("moodle", "ET33OI8994FAQ351P");
-		this.token = r.getMensaje();
+		//Response r = cedProxy.loginMoodle("moodle", "ET33OI8994FAQ351P");
+		//this.token = r.getMensaje();
 
 		if (ctx.getRequest().getMethod() == "POST") {
 			regulizarAsistencia(ctx.getRequest().getParameter("jsonData"));

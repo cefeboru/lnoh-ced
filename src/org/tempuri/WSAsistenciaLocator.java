@@ -22,7 +22,7 @@ public class WSAsistenciaLocator extends org.apache.axis.client.Service implemen
     }
 
     // Use to get a proxy class for WSAsistenciaSoap
-    private java.lang.String WSAsistenciaSoap_address = "http://asistencia.agpc.cl/ws/WSAsistencia.asmx";
+    private java.lang.String WSAsistenciaSoap_address = "http://ced2.intercapit.com/ws/WSAsistencia.asmx";
 
     public java.lang.String getWSAsistenciaSoapAddress() {
         return WSAsistenciaSoap_address;

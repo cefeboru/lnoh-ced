@@ -88,12 +88,11 @@ public class Index {
 		String fechaAsistencia = sdf.format(asistance_date);
 		// Call the WebService method registrarAsistencia
 		int endIndex = this.getCourseId().lastIndexOf("-");
-		Response response = cedProxy.registrarAsistencia(getCourseId().substring(0, endIndex), rut, fechaAsistencia,
-				this.getToken());
-		int codigo = response.getCodigo();
-		String responseMessage = response.getMensaje();
-		System.out.println("WS response: " + response.getMensaje() + " WS code: " + response.getCodigo() + " Date: "
-				+ fechaAsistencia);
+		/*Response response = cedProxy.registrarAsistencia(getCourseId().substring(0, endIndex), rut, fechaAsistencia,
+				this.getToken());*/
+		//int codigo = response.getCodigo();
+		int codigo = 0;
+		String responseMessage = "TEST DE CARGA";
 		// Get the BlackBoard DATABASE CONNECTION
 		ConnectionManager cManager = BbDatabase.getDefaultInstance().getConnectionManager();
 		Connection conn = cManager.getConnection();
@@ -101,7 +100,6 @@ public class Index {
 		String queryString = "";
 		if (BbDatabase.getDefaultInstance().isOracle()) {
 			queryString = "insert into lnoh_ced_response VALUES (LNOH_CED_RESPONSE_SEQ.nextVal,?,?,?,?,?)";
-			
 		}
 
 		PreparedStatement query = conn.prepareStatement(queryString, Statement.NO_GENERATED_KEYS);
@@ -109,7 +107,7 @@ public class Index {
 		query.setString(2, getCourseId());
 		query.setInt(3, (int)(asistance_date.getTime() / 1000L));
 		query.setInt(4, (int)(System.currentTimeMillis() / 1000L));
-		query.setInt(5, response.getCodigo());
+		query.setInt(5, codigo);
 		query.execute();
 
 		// WEB SERVICE ERROR HANDLING

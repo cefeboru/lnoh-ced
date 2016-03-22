@@ -81,48 +81,6 @@ public class Index {
 		}
 	}
 
-	public int registrarAsistencia(Date date, User user)
-			throws SQLException, ConnectionNotAvailableException, RemoteException {
-
-		// Format Date
-		SimpleDateFormat sdf = new SimpleDateFormat("ddMMyyyy");
-		String fechaAsistencia = sdf.format(date);
-		// Call the WebService method registrarAsistencia
-		int endIndex = this.getCourseId().lastIndexOf("-");
-		Response response = cedProxy.registrarAsistencia(this.getCourseId().substring(0, endIndex), user.getStudentId(),
-				fechaAsistencia, this.getToken());
-		int codigo = response.getCodigo();
-
-		System.out.println("WS response: " + response.getMensaje() + " WS code: " + response.getCodigo() + "Date: "
-				+ fechaAsistencia);
-		// Get the BlackBoard DATABASE CONNECTION
-		ConnectionManager cManager = BbDatabase.getDefaultInstance().getConnectionManager();
-		Connection conn = cManager.getConnection();
-
-		String queryString = "";
-		if (BbDatabase.getDefaultInstance().isOracle()) {
-			
-			queryString = "insert into lnoh_ced_response VALUES (LNOH_CED_RESPONSE_SEQ.nextVal,?,?,?,?,?)";
-
-		} 
-		
-		PreparedStatement query = conn.prepareStatement(queryString, Statement.NO_GENERATED_KEYS);
-		query.setString(1, user.getStudentId());
-		query.setString(2, getCourseId());
-		query.setInt(3, (int)(date.getTime() / 1000L));
-		query.setInt(4, (int)(System.currentTimeMillis() / 1000L));
-		query.setInt(5, response.getCodigo());
-		query.execute();
-
-		query.close();
-		query = null;
-		conn.close();
-		conn = null;
-		cManager.close();
-		cManager = null;
-		return codigo;
-	}
-
 	public int registrarAsistencia(Date asistance_date, String rut) throws Exception {
 
 		// Format Date
@@ -162,7 +120,6 @@ public class Index {
 			c.set(Calendar.MINUTE, 0);
 			c.set(Calendar.SECOND, 0);
 			Date startOfDay = c.getTime();
-
 			c.set(Calendar.HOUR_OF_DAY, 23);
 			c.set(Calendar.MINUTE, 59);
 			c.set(Calendar.SECOND, 59);
@@ -172,10 +129,6 @@ public class Index {
 			// Manejar errores de CED
 			if (codigo == 4) {
 				// Error de tipo Usuario
-				/*Query = "SELECT COUNT(*) FROM LNOH_CED_RESPONSE WHERE codigo=" + codigo + "AND ID_CURSO='"
-						+ this.getCourseId() + "' AND (fecha_ws BETWEEN " + startOfDay.getTime() / 1000L + " AND "
-						+ endOfDay.getTime() / 1000L + ")";*/
-				
 				Query = "SELECT COUNT(*) FROM LNOH_CED_RESPONSE WHERE codigo= ? AND ID_CURSO=? AND (fecha_ws BETWEEN ? AND ?)";
 			}
 

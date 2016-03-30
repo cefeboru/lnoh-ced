@@ -13,6 +13,11 @@
     <primary-key name="lnoh_response_pk1">
       <columnref name="pk1"/>
     </primary-key>
+    
+     <index name="lnoh_ced_response_ie1" unique="false">
+      <columnref name="rut_estudiante" />
+      <columnref name="id_curso" />
+    </index>
 
   </table>
 </schema>

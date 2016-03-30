@@ -29,5 +29,10 @@
     <primary-key name="lnoh_horario_doc_pk1">
       <columnref name="pk1"/>
     </primary-key>
+    
+    <index name="lnoh_horario_docente_ie1" unique="false">
+      <columnref name="MODULO" />
+      <columnref name="SECCION" />
+    </index>
   </table>
 </schema>

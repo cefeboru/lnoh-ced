@@ -80,7 +80,7 @@ public class Index {
 		}
 	}
 
-	public int registrarAsistencia(Date asistance_date, String rut) {
+	public int registrarAsistencia(Date asistance_date, String rut,Connection conn) {
 
 		// Format Date
 		SimpleDateFormat sdf = new SimpleDateFormat("ddMMyyyy");
@@ -89,18 +89,12 @@ public class Index {
 		int endIndex = this.getCourseId().lastIndexOf("-");
 		Response response;
 		
-		ConnectionManager cManager = null;
-		Connection conn = null;
-		
 		int codigo = -1;
 		try {
 			response = cedProxy.registrarAsistencia(getCourseId().substring(0, endIndex), rut, fechaAsistencia,
 					this.getToken());
 			
 			codigo = response.getCodigo();
-
-			cManager = BbDatabase.getDefaultInstance().getConnectionManager();
-			conn = cManager.getConnection();
 
 			String queryString = "";
 			if (BbDatabase.getDefaultInstance().isOracle()) {
@@ -156,24 +150,9 @@ public class Index {
 			}
 		} catch (RemoteException e) {
 			e.printStackTrace();
-		} catch (ConnectionNotAvailableException e) {
+		}  catch (SQLException e) {
 			e.printStackTrace();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		} finally {
-			//Freeing DB Resources
-			if(cManager != null && conn!= null){
-				try {
-					cManager.releaseConnection(conn);
-					conn.close();
-					conn = null;
-					cManager = null;
-				} catch (SQLException e) {
-					e.printStackTrace();
-				}
-				
-			}	
-		}
+		} 
 		return codigo;
 	}
 
@@ -219,48 +198,75 @@ public class Index {
 
 	}
 
-	public void regulizarAsistencia(String recievedData) throws Exception {
+	public void regulizarAsistencia(String recievedData) throws ParseException {
 		String[] data = recievedData.split(",");
-		for (int i = 0; i < data.length; i++) {
-			String rut = data[i].split(":")[0];
-			int semana = Integer.valueOf(data[i].split(":")[1]);
-			Calendar cal = Calendar.getInstance();
+		
+		ConnectionManager cManager = null;
+		Connection conn = null;
+		
+		cManager = BbDatabase.getDefaultInstance().getConnectionManager();
 
-			if (diasProgramadosSemana.size() == 0) {
-				throw new Exception("No se encontraron clases programadas para este modulo.");
-			}
-			int[] diasProgramados = diasProgramadosSemana.get(semana - 1);
-			for (int j = 0; j < diasProgramados.length; j++) {
-				cal.setTime(new SimpleDateFormat("dd/MM/yyyy").parse(semanasList.get(semana - 1)[0]));
-				cal.add(Calendar.DAY_OF_WEEK, diasProgramados[j] - 1);
-				System.out.println("Regulizando Asistencia para semana " +semana+" - " + cal.getTime() + " con rut: " + rut);
-				int codigo = this.registrarAsistencia(cal.getTime(), rut);
+		try{
+			conn = cManager.getConnection();
+			for (int i = 0; i < data.length; i++) {
+				String rut = data[i].split(":")[0];
+				int semana = Integer.valueOf(data[i].split(":")[1]);
+				Calendar cal = Calendar.getInstance();
 
-				if (codigo == 0 || codigo == 10) {
-					continue;
+				if (diasProgramadosSemana.size() == 0) {
+					System.out.println("No se encontraron clases programadas para el modulo " + this.getCourseId());
 				}
+				int[] diasProgramados = diasProgramadosSemana.get(semana - 1);
+				for (int j = 0; j < diasProgramados.length; j++) {
+					cal.setTime(new SimpleDateFormat("dd/MM/yyyy").parse(semanasList.get(semana - 1)[0]));
+					cal.add(Calendar.DAY_OF_WEEK, diasProgramados[j] - 1);
+					int codigo = this.registrarAsistencia(cal.getTime(), rut,conn);
 
-				// WebService Exception Handling
-				if (codigo == 4) {
-					throw new Exception("ERROR 4 - Alumno no econtrado");
-				} else if (codigo == 5) {
-					throw new Exception("ERROR 5 - Módulo no encontrado");
-				} else if (codigo == 7) {
-					throw new Exception("ERROR 7 - Fecha invalida");
-				} else if (codigo == 8) {
-					throw new Exception("ERROR 8 - Fecha festiva");
-				} else if (codigo == 9) {
-					throw new Exception(
-							"ERROR 9 - Módulo-sección sin programación para la fecha indicada o regularizada con ausencia del docente");
-				} else if (codigo == 11) {
-					throw new Exception("ERROR 11 - Sección no encontrada");
-				} else if (codigo == 12) {
-					throw new Exception("ERROR 12 - Módulo se encuentra finalizado");
-				} else {
-					throw new Exception("ERROR Indefinido");
+					if (codigo == 0 || codigo == 10) {
+						continue;
+					}
+
+					// WebService Exception Handling
+					if (codigo == 4) {
+						throw new Exception("ERROR 4 - Alumno no econtrado");
+					} else if (codigo == 5) {
+						throw new Exception("ERROR 5 - Módulo no encontrado");
+					} else if (codigo == 7) {
+						throw new Exception("ERROR 7 - Fecha invalida");
+					} else if (codigo == 8) {
+						throw new Exception("ERROR 8 - Fecha festiva");
+					} else if (codigo == 9) {
+						throw new Exception(
+								"ERROR 9 - Módulo-sección sin programación para la fecha indicada o regularizada con ausencia del docente");
+					} else if (codigo == 11) {
+						throw new Exception("ERROR 11 - Sección no encontrada");
+					} else if (codigo == 12) {
+						throw new Exception("ERROR 12 - Módulo se encuentra finalizado");
+					} else {
+						throw new Exception("ERROR Indefinido");
+					}
 				}
 			}
+		} catch(ParseException ex) {
+			ex.printStackTrace();
+		} catch (ConnectionNotAvailableException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				cManager.releaseConnection(conn);
+				conn.close();
+				conn = null;
+				cManager = null;
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
 		}
+		
+		
 	}
 
 	public void calculateWeeks() {
@@ -345,13 +351,8 @@ public class Index {
 
 			String[] lastWeekArray = semanasList.get(semanasList.size() - 1);
 			Date lastWeekStart = new SimpleDateFormat("dd/MM/yyyy").parse(lastWeekArray[0]);
-			Date lastWeekEnd = new SimpleDateFormat("yyyy-M-d").parse(fecha_fin);
 
 			for (int i = 0; i < this.semanasList.size()-1; i++) {
-				//TODO Validar que no haya se agregue si la fecha pasa el final del curso
-				StringBuilder tempQuery = new StringBuilder();
-				tempQuery.append("SELECT id_dia FROM LNOH_HORARIO_DOCENTE WHERE modulo= ? AND seccion= ? AND ano_proceso= ?");
-				tempQuery.append("AND semestre_proceso= ? AND (nom_edificio LIKE '%VIRTUAL%' OR nom_sala LIKE '%VIRTUAL%' OR nom_edificio LIKE '%ONL%')");
 				diasProgramadosSemana.add(diasProgramados);
 			}
 
@@ -360,14 +361,19 @@ public class Index {
 				Calendar tempCalendar = Calendar.getInstance();
 				tempCalendar.setTime(lastWeekStart);
 				tempCalendar.add(Calendar.DAY_OF_WEEK, diasProgramados[j] - 1);
-				if (tempCalendar.getTime().compareTo(lastWeekEnd) <= 0) {
+				if (tempCalendar.getTime().compareTo(this.endOfCourse) <= 0) {
 					clasesUltimaSemana.add(diasProgramados[j]);
 				}
 			}
-			// Si no hay clases, eliminar la ultima semana
-			if (clasesUltimaSemana.size() == 0) {
-				semanasList.remove(semanasList.size() - 1);
+			
+			Object tempArray[] = clasesUltimaSemana.toArray();
+			int diasUltimasemana[] = new int[tempArray.length];
+			
+			for(int i=0;i < tempArray.length ; i++) {
+				diasUltimasemana[i] = Integer.valueOf(String.valueOf(tempArray[i]));
 			}
+			
+			this.diasProgramadosSemana.set(diasProgramadosSemana.size()-1,diasUltimasemana);
 			resultSet.close();
 		} catch (ConnectionNotAvailableException e) {
 			e.printStackTrace();
@@ -423,7 +429,6 @@ public class Index {
 
 						if (now.compareTo(inicio_semana) >= 0 && now.compareTo(fin_semana) <= 0) {
 							//TODO REMOVE PRINT
-							System.out.println("Registrando asistencia para la semana " + (i + 1));
 							// Por cada clase programada
 							Calendar tempCal = Calendar.getInstance();
 
@@ -433,7 +438,7 @@ public class Index {
 								tempCal.add(Calendar.DATE, dia - 1);
 								
 								System.out.println("Registrando asistencia para el dia:  "+tempCal.getTime());
-								int code = registrarAsistencia(tempCal.getTime(), user.getStudentId());
+								int code = registrarAsistencia(tempCal.getTime(), user.getStudentId(),conn);
 								if (code == 0 || code == 10) {
 									estado = "<img width=\"20\" src=\"Resources/check.png\">";
 								}

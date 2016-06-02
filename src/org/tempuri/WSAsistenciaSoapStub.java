@@ -14,13 +14,14 @@ public class WSAsistenciaSoapStub extends org.apache.axis.client.Stub implements
     private java.util.Vector cachedDeserFactories = new java.util.Vector();
 
     static org.apache.axis.description.OperationDesc [] _operations;
-
+    
     static {
         _operations = new org.apache.axis.description.OperationDesc[4];
         _initOperationDesc1();
     }
 
     private static void _initOperationDesc1(){
+    	
         org.apache.axis.description.OperationDesc oper;
         org.apache.axis.description.ParameterDesc param;
         oper = new org.apache.axis.description.OperationDesc();
@@ -88,7 +89,8 @@ public class WSAsistenciaSoapStub extends org.apache.axis.client.Stub implements
     }
 
     public WSAsistenciaSoapStub() throws org.apache.axis.AxisFault {
-         this(null);
+    	this(null);
+        this.setTimeout(15);
     }
 
     public WSAsistenciaSoapStub(java.net.URL endpointURL, javax.xml.rpc.Service service) throws org.apache.axis.AxisFault {

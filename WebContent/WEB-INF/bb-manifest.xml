@@ -4,7 +4,7 @@
 		<name value="Carpeta Electronica Docente"/>
 		<handle value="AIEP CED"/>
 		<description value="CED Building Block"/>
-		<version value= "1.0.1"/>
+		<version value= "1.0.5"/>
 		<requires>
     		<bbversion value="9.1.0"/>
     	</requires>
@@ -31,6 +31,7 @@
 	  <schema-dir dir-name="WsResponses" />
 	  <schema-dir dir-name="horarioDocente" />
 	  <schema-dir dir-name="horarioDocenteTemp" />
+	  <schema-dir dir-name="CED_Settings" />
 	</schema-dirs>
     
     <permissions>

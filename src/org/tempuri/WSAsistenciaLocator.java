@@ -7,6 +7,14 @@
 
 package org.tempuri;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import blackboard.db.BbDatabase;
+import blackboard.db.ConnectionManager;
+import blackboard.db.ConnectionNotAvailableException;
+
 public class WSAsistenciaLocator extends org.apache.axis.client.Service implements org.tempuri.WSAsistencia {
 
     public WSAsistenciaLocator() {
@@ -22,9 +30,42 @@ public class WSAsistenciaLocator extends org.apache.axis.client.Service implemen
     }
 
     // Use to get a proxy class for WSAsistenciaSoap
-    private java.lang.String WSAsistenciaSoap_address = "http://ced2.intercapit.com/ws/WSAsistencia.asmx";
+    private java.lang.String WSAsistenciaSoap_address = "http://cedtest3.intercapit.com/ws/WSAsistencia.asmx";
 
     public java.lang.String getWSAsistenciaSoapAddress() {
+    	ConnectionManager cManager = null;
+    	Connection conn = null;
+    	ResultSet rs = null;
+    	try {
+    		cManager = BbDatabase.getDefaultInstance().getConnectionManager();
+			conn = cManager.getConnection();
+			rs = conn.createStatement().executeQuery("SELECT * FROM LNOH_CED_SETTINGS WHERE NAME='WS_URL'");
+			if(rs.next()) {
+				String URL = rs.getString("WS_URL");
+				return URL;
+			} else {
+				return "http://asistencia.agpc.cl/ws/WSAsistencia.asmx";
+			}
+			
+		} catch (ConnectionNotAvailableException e) {
+			e.printStackTrace();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			if(cManager != null && conn != null) {
+				try {
+					rs.close();
+					conn.close();
+					cManager.releaseConnection(conn);
+					rs = null;
+					conn = null;
+					cManager = null;
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+				
+			}
+		}
         return WSAsistenciaSoap_address;
     }
 

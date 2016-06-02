@@ -17,7 +17,8 @@ import blackboard.data.user.User;
 import blackboard.db.BbDatabase;
 import blackboard.db.ConnectionManager;
 import blackboard.db.ConnectionNotAvailableException;
-import blackboard.persist.DatabaseContainer;
+import blackboard.persist.KeyNotFoundException;
+import blackboard.persist.PersistenceException;
 import blackboard.persist.course.CourseMembershipDbLoader;
 import blackboard.persist.user.UserDbLoader;
 import blackboard.platform.context.Context;
@@ -27,14 +28,9 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.Properties;
 
-import javax.mail.Message;
 import javax.mail.MessagingException;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
+
 
 import blackboard.platform.email.BbMail;
 import blackboard.platform.email.BbMailManagerFactory;
@@ -57,7 +53,7 @@ public class Index {
 
 	public String flags = "";
 
-	public Index(Context bbContext) throws Exception {
+	public Index(Context bbContext){
 
 		this.ctx = bbContext;
 		// Instanciar el WeService
@@ -72,11 +68,17 @@ public class Index {
 		setSemestre(courseIdComposers[3]);
 
 		this.calculateWeeks();
-		Response r = cedProxy.loginMoodle("moodle", "ET33OI8994FAQ351P");
-		this.token = r.getMensaje();
-
-		if (ctx.getRequest().getMethod() == "POST") {
-			regulizarAsistencia(ctx.getRequest().getParameter("jsonData"));
+		Response r;
+		try {
+			r = cedProxy.loginMoodle("moodle", "ET33OI8994FAQ351P");
+			this.token = r.getMensaje();
+			if (ctx.getRequest().getMethod() == "POST") {
+				regulizarAsistencia(ctx.getRequest().getParameter("jsonData"));
+			}
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		} catch (ParseException e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -88,26 +90,32 @@ public class Index {
 		// Call the WebService method registrarAsistencia
 		int endIndex = this.getCourseId().lastIndexOf("-");
 		Response response;
+		PreparedStatement preparedQuery = null;
+		PreparedStatement query = null;
+		ResultSet rs = null;
 		
 		int codigo = -1;
 		try {
-			response = cedProxy.registrarAsistencia(getCourseId().substring(0, endIndex), rut, fechaAsistencia,
-					this.getToken());
+			String courseId = getCourseId().substring(0, endIndex);
+			//CALL TO WebService
+			response = cedProxy.registrarAsistencia(courseId, rut, fechaAsistencia,this.getToken());
 			
+			//GET RESPONSE CODE FORM WS
 			codigo = response.getCodigo();
 
 			String queryString = "";
-			if (BbDatabase.getDefaultInstance().isOracle()) {
-				queryString = "INSERT INTO lnoh_ced_response VALUES (LNOH_CED_RESPONSE_SEQ.nextVal,?,?,?,?,?)";
-				
-			}
+			//INSERT QUERY
+			queryString = "INSERT INTO lnoh_ced_response VALUES (LNOH_CED_RESPONSE_SEQ.nextVal,?,?,?,?,?)";
 
-			PreparedStatement query = conn.prepareStatement(queryString, Statement.NO_GENERATED_KEYS);
+			//SET QUERY PARAMETERS
+			query = conn.prepareStatement(queryString, Statement.NO_GENERATED_KEYS);
 			query.setString(1, rut);
 			query.setString(2, getCourseId());
 			query.setInt(3, (int)(asistance_date.getTime() / 1000L));
 			query.setInt(4, (int)(System.currentTimeMillis() / 1000L));
 			query.setInt(5, codigo);
+			
+			//INSERT VALUES
 			query.execute();
 
 			// WEB SERVICE ERROR HANDLING
@@ -129,30 +137,45 @@ public class Index {
 				if (codigo == 4) {
 					// Error de tipo Usuario
 					Query = "SELECT COUNT(*) FROM LNOH_CED_RESPONSE WHERE codigo=? AND ID_CURSO=? AND (fecha_ws BETWEEN ? AND ?)";
-				}
-
-				PreparedStatement preparedQuery = conn.prepareStatement(Query);
-				preparedQuery.setInt(1, codigo);
-				preparedQuery.setString(2, getCourseId());
-				preparedQuery.setInt(3, (int)(startOfDay.getTime() / 1000L));
-				preparedQuery.setInt(4, (int)(endOfDay.getTime() / 1000L));
-				
-				ResultSet rs = preparedQuery.executeQuery();
-				if (rs.next()) {
-					// Si se registro un error, se procedera a enviar un correo
-					int count = rs.getInt(1);
-					if (count <= 1) {
-						//TODO Descomentar enviar correo
-						// Enviar solo si es el primer error del dia.
-						//sendExceptionEmail(asistance_date, responseMessage, codigo,new Date(System.currentTimeMillis()) );
+					preparedQuery = conn.prepareStatement(Query);
+					preparedQuery.setInt(1, codigo);
+					preparedQuery.setString(2, getCourseId());
+					preparedQuery.setInt(3, (int)(startOfDay.getTime() / 1000L));
+					preparedQuery.setInt(4, (int)(endOfDay.getTime() / 1000L));
+					
+					rs = preparedQuery.executeQuery();
+					if (rs.next()) {
+						// Si se registro un error, se enviara un correo
+						int count = rs.getInt(1);
+						if (count <= 1) {
+							try {
+								sendExceptionEmail(asistance_date, response.getMensaje(), codigo,new Date(System.currentTimeMillis()) );
+							} catch (ParseException e) {
+								e.printStackTrace();
+							}
+						}
 					}
 				}
+
+				
 			}
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		}  catch (SQLException e) {
 			e.printStackTrace();
-		} 
+		} finally {
+			try {
+				if(preparedQuery != null)
+					preparedQuery.close();
+				if(query != null)
+					query.close();
+				if(rs != null)
+					rs.close();
+				
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
 		return codigo;
 	}
 
@@ -260,7 +283,6 @@ public class Index {
 				conn = null;
 				cManager = null;
 			} catch (SQLException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			
@@ -276,19 +298,28 @@ public class Index {
 		queryBuilder.append("MAX(TO_DATE(REGEXP_SUBSTR(FECHA_LIBERADA, '^.{10}'),'yyyy-MM-dd')) \"END_DATE\"");
 		queryBuilder.append("FROM lnoh_horario_docente WHERE modulo=? AND SECCION = ? ");
 		queryBuilder.append("AND ano_proceso=? AND semestre_proceso=?");
+		
+		/*
+		SELECT MIN(TO_DATE(REGEXP_SUBSTR(FECHA_OCUPADA, '^.{10}'),'yyyy-MM-dd')) "START_DATE",
+		MAX(TO_DATE(REGEXP_SUBSTR(FECHA_LIBERADA, '^.{10}'),'yyyy-MM-dd')) "END_DATE"
+		FROM lnoh_horario_docente WHERE modulo=? AND SECCION = ?
+		AND ano_proceso=? AND semestre_proceso=?
+		*/
 
 		ConnectionManager cManager = null;
 		Connection conn = null;
+		PreparedStatement preparedQuery = null;
+		ResultSet resultSet = null;
 		try {
 			cManager = BbDatabase.getDefaultInstance().getConnectionManager();
 			conn = cManager.getConnection();
-			PreparedStatement preparedQuery = conn.prepareStatement(queryBuilder.toString());
+			preparedQuery = conn.prepareStatement(queryBuilder.toString());
 			preparedQuery.setString(1, getModulo());
 			preparedQuery.setInt(2, Integer.valueOf(getSeccion()));
 			preparedQuery.setInt(3, Integer.valueOf(getAnio()));
 			preparedQuery.setInt(4, Integer.valueOf(getSemestre()));
 			
-			ResultSet resultSet = preparedQuery.executeQuery();
+			resultSet = preparedQuery.executeQuery();
 			String fecha_inicio = "";
 			String fecha_fin = "";
 			if (resultSet.next()) {
@@ -328,7 +359,7 @@ public class Index {
 					+ "AND semestre_proceso= ? AND (nom_edificio LIKE '%VIRTUAL%' "
 					+ "OR nom_sala LIKE '%VIRTUAL%' OR nom_edificio LIKE '%ONL%')";
 
-			System.out.println("calculateWeeks: ID DIAS Query: " + queryString);
+			//System.out.println("calculateWeeks: ID DIAS Query: " + queryString);
 
 			preparedQuery = conn.prepareStatement(queryString, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
 			preparedQuery.setString(1, getModulo());
@@ -352,7 +383,7 @@ public class Index {
 			String[] lastWeekArray = semanasList.get(semanasList.size() - 1);
 			Date lastWeekStart = new SimpleDateFormat("dd/MM/yyyy").parse(lastWeekArray[0]);
 
-			for (int i = 0; i < this.semanasList.size()-1; i++) {
+			for (int i = 0; i < this.semanasList.size(); i++) {
 				diasProgramadosSemana.add(diasProgramados);
 			}
 
@@ -374,20 +405,31 @@ public class Index {
 			}
 			
 			this.diasProgramadosSemana.set(diasProgramadosSemana.size()-1,diasUltimasemana);
-			resultSet.close();
+			
 		} catch (ConnectionNotAvailableException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} catch (ParseException e) {
 			e.printStackTrace();
+		} catch (Exception ex){
+			ex.printStackTrace();
 		} finally {
-			//Freeing DB Resources
 			try {
-				cManager.releaseConnection(conn);
-				conn.close();
-				conn = null;
-				cManager = null;
+				if(conn != null) {
+					cManager.releaseConnection(conn);
+					conn.close();
+					conn = null;
+					cManager = null;
+				}
+				if(preparedQuery != null) {
+					preparedQuery.close();
+					preparedQuery = null;
+				}
+				if(resultSet != null) {
+					resultSet.close();
+					resultSet = null;
+				}
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
@@ -398,7 +440,9 @@ public class Index {
 		ArrayList<String> weeksItems = new ArrayList<String>();
 		ConnectionManager cManager = null;
 		Connection conn = null;
-		String columns = "";;
+		String columns = "";
+		ResultSet rSet = null;
+		PreparedStatement preparedQuery = null;
 		
 		try {
 			cManager = BbDatabase.getDefaultInstance().getConnectionManager();
@@ -408,15 +452,18 @@ public class Index {
 				Date inicio_semana = new SimpleDateFormat("dd/MM/yyyy").parse(semanasList.get(i)[0]);
 				Date fin_semana = new SimpleDateFormat("dd/MM/yyyy").parse(semanasList.get(i)[1]);
 				
-				String queryString = "SELECT Count(*) FROM lnoh_ced_response WHERE rut_estudiante=? AND id_curso=? AND codigo IN(0,10) AND fecha_asistencia BETWEEN ? AND ?";
+				StringBuilder queryString = new StringBuilder();
+				queryString.append("SELECT Count(*) FROM lnoh_ced_response ");
+				queryString.append("WHERE rut_estudiante=? and id_curso=? AND codigo IN(0,10) ");
+				queryString.append("AND fecha_asistencia BETWEEN ? AND ? ");
 				
-				PreparedStatement preparedQuery = conn.prepareStatement(queryString);
+				preparedQuery = conn.prepareStatement(queryString.toString());
 				preparedQuery.setString(1, user.getStudentId());
 				preparedQuery.setString(2, getCourseId());
 				preparedQuery.setInt(3, (int)(inicio_semana.getTime() / 1000L));
 				preparedQuery.setInt(4, (int)(fin_semana.getTime() / 1000L));
 				
-				ResultSet rSet = preparedQuery.executeQuery();
+				rSet = preparedQuery.executeQuery();
 
 				String estado = "<img width=\"20\" src=\"Resources/cross.png\">";
 				if (rSet.next()) {
@@ -428,8 +475,6 @@ public class Index {
 						Date now = Calendar.getInstance().getTime();
 
 						if (now.compareTo(inicio_semana) >= 0 && now.compareTo(fin_semana) <= 0) {
-							//TODO REMOVE PRINT
-							// Por cada clase programada
 							Calendar tempCal = Calendar.getInstance();
 
 							for (int j = 0; j < diasProgramadosSemana.get(i).length; j++) {
@@ -445,8 +490,9 @@ public class Index {
 							}
 						}
 					}
+				} else {
+					System.out.println("No se encontro registros para la semana del " + inicio_semana.toString()+" al "+fin_semana+" - CourseId: "+this.getCourseId());
 				}
-				rSet.close();
 				// HTML CODE
 				String temp = "";
 				temp = "<h4> Semana " + (i + 1) + " <small> (" + semanasList.get(i)[0] + " - " + semanasList.get(i)[1]
@@ -465,20 +511,46 @@ public class Index {
 				}
 			}
 			if (columns == "" || columnContent != "") {
-				columns += "<div style=\"width:50%; display:inline-block; vertical-align:top;\">" + columnContent
+				columns += "<div style=\"width:360px; display:inline-block; vertical-align:top;\">" + columnContent
 						+ "</div>";
 			}
 		} catch (ConnectionNotAvailableException e) {
 			e.printStackTrace();
+			System.out.println("CED ERROR - " + e.getFullMessageTrace());
 		} catch (ParseException e) {
+			System.out.println("CED ERROR - " + e.getStackTrace().toString());
 			e.printStackTrace();
 		} catch (SQLException e) {
+			System.out.println("CED ERROR - " + e.getStackTrace().toString());
 			e.printStackTrace();
-		} finally {
+		} catch (Exception ex){
+			System.out.println("CED ERROR - " + ex.getStackTrace().toString());
+			ex.printStackTrace();
+		} 
+		finally {
+				try {
+					if(rSet != null) {
+						rSet.close();
+						rSet = null;
+					}
+					
+					if(preparedQuery != null){
+						preparedQuery.close();
+						preparedQuery = null;
+					}
+					
+					if(conn != null) {
+						cManager.releaseConnection(conn);
+						conn.close();
+						conn  = null;
+						cManager = null;
+					}
+					
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
 			
 		}
-		
-
 		return columns;
 	}
 
@@ -495,52 +567,80 @@ public class Index {
 		return row;
 	}
 
-	public String renderTableBody() throws Exception {
+	public String renderTableBody() {
 
-		List<User> users = UserDbLoader.Default.getInstance().loadByCourseId(ctx.getCourseId());
+		List<User> users;
 		String content = "";
-		for (int i = 0; i < users.size(); i++) {
-			User currentUser = users.get(i);
-			CourseMembership cm = CourseMembershipDbLoader.Default.getInstance()
-					.loadByCourseAndUserId(this.ctx.getCourseId(), currentUser.getId());
+		ConnectionManager cManager = null;
+		Connection conn = null;
+		PreparedStatement query = null;
+		ResultSet rSet = null;
+		
+		try {
+			users = UserDbLoader.Default.getInstance().loadByCourseId(ctx.getCourseId());
+			for (int i = 0; i < users.size(); i++) {
+				User currentUser = users.get(i);
+				CourseMembership cm = CourseMembershipDbLoader.Default.getInstance()
+						.loadByCourseAndUserId(this.ctx.getCourseId(), currentUser.getId());
 
-			if (cm.getRole().getDbRole().getIdentifier().equalsIgnoreCase("S")) {
-				String cell = "<td>" + currentUser.getGivenName() + " " + currentUser.getFamilyName() + "</td>";
+				if (cm.getRole().getDbRole().getIdentifier().equalsIgnoreCase("S")) {
+					String cell = "<td>" + currentUser.getGivenName() + " " + currentUser.getFamilyName() + "</td>";
 
-				ConnectionManager cManager = BbDatabase.getDefaultInstance().getConnectionManager();
-				Connection conn = cManager.getConnection();
-				PreparedStatement query = null;
-				ResultSet rSet = null;
+					cManager = BbDatabase.getDefaultInstance().getConnectionManager();
+					conn = cManager.getConnection();
+					query = null;
+					rSet = null;
 
-				for (int j = 0; j < semanasList.size(); j++) {
+					for (int j = 0; j < semanasList.size(); j++) {
 
-					Date inicio_semana = new SimpleDateFormat("dd/MM/yyyy").parse(semanasList.get(j)[0]);
-					Date fin_semana = new SimpleDateFormat("dd/MM/yyyy").parse(semanasList.get(j)[1]);
+						Date inicio_semana = new SimpleDateFormat("dd/MM/yyyy").parse(semanasList.get(j)[0]);
+						Date fin_semana = new SimpleDateFormat("dd/MM/yyyy").parse(semanasList.get(j)[1]);
 
-					String queryStringTemp = "SELECT Count(*) FROM lnoh_ced_response WHERE rut_estudiante='"
-							+ currentUser.getStudentId() + "' AND id_curso='" + this.getCourseId()
-							+ "' AND codigo IN(0,10) AND fecha_asistencia BETWEEN " + (inicio_semana.getTime() / 1000L)
-							+ " AND " + (fin_semana.getTime() / 1000L);
+						String queryStringTemp = "SELECT Count(*) FROM lnoh_ced_response WHERE rut_estudiante='"
+								+ currentUser.getStudentId() + "' AND id_curso='" + this.getCourseId()
+								+ "' AND codigo IN(0,10) AND fecha_asistencia BETWEEN " + (inicio_semana.getTime() / 1000L)
+								+ " AND " + (fin_semana.getTime() / 1000L);
 
-					query = conn.prepareStatement(queryStringTemp, Statement.NO_GENERATED_KEYS);
-					rSet = query.executeQuery();
-					if (rSet.next()) {
-						int count = rSet.getInt(1);
-						if (count > 0) {
-							String weekCell = "<td><img width=\"15\" src=\"Resources/check.png\"></td>";
-							cell += weekCell;
-						} else {
-							String weekCell = "<td><input type=\"checkbox\" week=\"" + (j + 1) + "\" ></td>";
-							cell += weekCell;
+						query = conn.prepareStatement(queryStringTemp, Statement.NO_GENERATED_KEYS);
+						rSet = query.executeQuery();
+						if (rSet.next()) {
+							int count = rSet.getInt(1);
+							if (count > 0) {
+								String weekCell = "<td><img width=\"15\" src=\"Resources/check.png\"></td>";
+								cell += weekCell;
+							} else {
+								String weekCell = "<td><input type=\"checkbox\" week=\"" + (j + 1) + "\" ></td>";
+								cell += weekCell;
+							}
 						}
 					}
-					// Close DB Connection
+					
+					content += "<tr rut=\"" + currentUser.getStudentId() + "\">" + cell + "</tr>";
 				}
-				query.close();
-				rSet.close();
-				conn.close();
+			}
+		} catch (KeyNotFoundException e) {
+			e.printStackTrace();
+		} catch (PersistenceException e) {
+			e.printStackTrace();
+		} catch (ConnectionNotAvailableException e) {
+			e.printStackTrace();
+		} catch (ParseException e) {
+			e.printStackTrace();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} catch (Exception ex){
+			ex.printStackTrace();
+		} finally {
+			try {
+				if(query != null)
+					query.close();
+				if(rSet != null)
+					rSet.close();
+				if(!conn.isClosed())
+					conn.close();
 				cManager.close();
-				content += "<tr rut=\"" + currentUser.getStudentId() + "\">" + cell + "</tr>";
+			} catch (SQLException e) {
+				e.printStackTrace();
 			}
 		}
 		return content;

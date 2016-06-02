@@ -6,6 +6,6 @@
 
 <% 
 	VolcadoHorarioDocente volcado = new VolcadoHorarioDocente();
-	out.print(volcado.VolcadoHorarioDocente(request));
+	out.print(volcado.insertRows(request));
 %>
 

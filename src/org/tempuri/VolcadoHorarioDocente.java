@@ -11,84 +11,110 @@ import java.util.Date;
 import javax.servlet.http.HttpServletRequest;
 
 import blackboard.db.BbDatabase;
+import blackboard.db.ConnectionManager;
 import blackboard.db.ConnectionNotAvailableException;
 
 public class VolcadoHorarioDocente {
 
-	public String VolcadoHorarioDocente(HttpServletRequest request) throws Exception {
+	public String insertRows(HttpServletRequest request){
 		if (request.getMethod().equalsIgnoreCase("post")) {
 			System.out.println("Iniciando Volcado de Horario Docente - " + (new Date()));
 			long startTime = System.currentTimeMillis();
 			BufferedReader reader;
-			reader = request.getReader();
+			ConnectionManager cManager = null;
 			Connection conn = null;
-			conn = BbDatabase.getDefaultInstance().getConnectionManager().getConnection();
-
 			String thisLine = null;
 			int rowsReaded = 0;
 			boolean isOracle = BbDatabase.getDefaultInstance().isOracle();
 			boolean skipLine = true;
-
-			PreparedStatement ps = conn.prepareStatement(
-					"INSERT INTO LNOH_HORARIO_DOCENTE_TEMP VALUES(LNOH_HORARIO_DOCENTE_SEQ.nextval,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-			int temp = 0;
-			boolean leftElements = true;
-			while ((thisLine = reader.readLine()) != null) {
-				// SKIP THE HEADERS IN THE FLAT FILE
-				if (skipLine) {
-					skipLine = false;
-					continue;
-				} else {
-					try {
-						leftElements = true;
-						String[] values = thisLine.split(";");
-						if (isOracle) {
-							this.setParameters(values, ps);
-							if (rowsReaded % 500 == 0) {
-								leftElements = false;
-								ps.executeBatch();
-								ps.clearBatch();
+			PreparedStatement ps = null;
+			
+			try {
+				reader = request.getReader();
+				cManager = BbDatabase.getDefaultInstance().getConnectionManager();
+				conn = cManager.getConnection();
+				
+				ps = conn.prepareStatement(
+						"INSERT INTO LNOH_HORARIO_DOCENTE_TEMP VALUES(LNOH_HORARIO_DOCENTE_SEQ.nextval,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+				//int temp = 0;
+				boolean leftElements = true;
+				while ((thisLine = reader.readLine()) != null) {
+					// SKIP THE HEADERS IN THE FLAT FILE
+					if (skipLine) {
+						skipLine = false;
+						continue;
+					} else {
+						try {
+							leftElements = true;
+							String[] values = thisLine.split(";");
+							if (isOracle) {
+								this.setParameters(values, ps);
+								if (rowsReaded % 500 == 0) {
+									leftElements = false;
+									ps.executeBatch();
+									ps.clearBatch();
+								}
+								rowsReaded++;
+								//temp++;
 							}
-							rowsReaded++;
-							temp++;
+						} catch (Exception ex) {
+							System.out.println("CED - Error en volcado, linea " + rowsReaded + " Message:" + ex.getMessage());
+							ex.printStackTrace();
 						}
-					} catch (Exception ex) {
-						System.out.println("CED - Error en volcado, linea " + rowsReaded + " Message:" + ex.getMessage());
-						ex.printStackTrace();
 					}
 				}
-			}
 
-			if (leftElements) {
-				if (isOracle) {
-					ps.executeBatch();
-					ps.clearBatch();
+				if (leftElements) {
+					if (isOracle) {
+						ps.executeBatch();
+						ps.clearBatch();
+					}
+				}
+				
+				if(rowsReaded == 0)
+				{
+					// DELETE ALL THE ROWS IN THE TEMPORAL TABLE
+					conn.createStatement().execute("DELETE FROM lnoh_horario_docente_temp");
+				} else {
+					//DELETE THE CURRENT DATA
+					conn.createStatement().executeQuery("DELETE FROM LNOH_HORARIO_DOCENTE");
+					//INSERT THE NEW DATA
+					conn.createStatement()
+							.executeQuery("INSERT INTO LNOH_HORARIO_DOCENTE SELECT * FROM lnoh_horario_docente_temp");
+					// DELETE THE TEMPORAL DATA
+					conn.createStatement().execute("DELETE FROM lnoh_horario_docente_temp");
+				}
+				
+			} catch (IOException e) {
+				e.printStackTrace();
+			} catch (ConnectionNotAvailableException e) {
+				e.printStackTrace();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			} finally {
+				try {
+					if(cManager != null) {
+						cManager.releaseConnection(conn);
+						cManager = null;
+					}
+					if(conn != null){
+						conn.close();
+						conn = null;
+					}
+					if(ps != null) {
+						ps.close();
+						ps = null;
+					}
+				} catch (SQLException e) {
+					e.printStackTrace();
 				}
 			}
 			
-			if(rowsReaded == 0)
-			{
-				// DELETE ALL THE ROWS IN THE TEMPORAL TABLE
-				conn.createStatement().execute("DELETE FROM lnoh_horario_docente_temp");
-			} else {
-				//DELETE THE CURRENT DATA
-				conn.createStatement().executeQuery("DELETE FROM LNOH_HORARIO_DOCENTE");
-				//INSERT THE NEW DATA
-				conn.createStatement()
-						.executeQuery("INSERT INTO LNOH_HORARIO_DOCENTE SELECT * FROM lnoh_horario_docente_temp");
-				// DELETE THE TEMPORAL DATA
-				conn.createStatement().execute("DELETE FROM lnoh_horario_docente_temp");
-			}
-
-			conn.close();
-			conn = null;
-			ps.close();
-			ps = null;
-
 			long endTime = System.currentTimeMillis();
 			long totalTime = endTime - startTime;
 			String data = "";
-			System.out.println(rowsReaded + " rows have been successfully processed in " + totalTime / 1000 + " seconds.");
+			Date currentDate = new Date();
+			System.out.println(currentDate.toString() + " - " +rowsReaded + " rows have been successfully processed in " + totalTime / 1000 + " seconds.");
 			data = "<p> " + rowsReaded + " rows have been successfully processed in " + totalTime / 1000
 					+ " seconds .</p>";
 			return data;

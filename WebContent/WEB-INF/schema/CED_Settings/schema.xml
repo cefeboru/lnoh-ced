@@ -1,0 +1,14 @@
+<schema name="lnoh_ced_settings">
+
+  <table name="lnoh_ced_settings">
+    <comment>Variables que contienen la configuracion de CED</comment>
+
+    <column name="NAME" data-type="char(30)" nullable="false" identity="false" />
+    <column name="VALUE" data-type="varchar(150)" nullable="false" />
+
+    <primary-key name="lnoh_ced_pk1">
+      <columnref name="NAME"/>
+    </primary-key>
+
+  </table>
+</schema>
